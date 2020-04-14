@@ -1,0 +1,19 @@
+# instruction
+
+a streaming service built on go-micro ecosystem
+
+## Feature
+
++ AVCodec: H264
++ Stream: TS/FLV/MP4  And PS in future
++ Session: RTSP/RTMP/HLV/GRPC
+
+
+## Inspired By
+
+[monibuca](https://github.com/Monibuca/engine)
+[websocket-streamserver](https://github.com/use-go/websocket-streamserver)
+[websocket-mse](https://github.com/elsampsa/websocket-mse-demo)
+## License 
+
+GPL-3.0

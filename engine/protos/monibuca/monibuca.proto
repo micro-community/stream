@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package monibuca;
+
+service monibuca {
+	rpc Play(PlayRequest) returns (PlayResponse) {}
+	rpc Stop(StopRequest) returns (StopResponse) {}
+    rpc Pull(PullRequest) returns (PullResponse) {}
+}
+
+message PlayRequest {
+	string id = 1;
+	string username = 2;
+	string password = 3;
+	int32 streamid = 4;
+}
+
+message PlayResponse {}
+
+message StopRequest {
+	string id = 1;
+	int32 streamid = 2;
+}
+
+message StopResponse {
+	string id = 1;
+}
+
+message PullRequest {
+	int32 streamid = 1;
+}
+
+message PullResponse {}

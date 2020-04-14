@@ -1,0 +1,10 @@
+[Plugins.Jessica]
+ListenAddr = ":8080"
+[Plugins.RTMP]
+ListenAddr = ":1935"
+[Plugins.GateWay]
+ListenAddr = ":8081"
+[Plugins.RecordFlv]
+Path="./resource"
+[Plugins.QoS]
+Suffix = ["high","medium","low"]
