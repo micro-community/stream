@@ -1,9 +1,10 @@
 package session
 
 import (
+	"sync"
+
 	"github.com/gorilla/websocket"
 	"github.com/micro/go-micro/v2/util/log"
-	"sync"
 )
 
 //Client Connection
@@ -48,7 +49,7 @@ func SendMessage(msg interface{}, userIDs []string) {
 	for _, userID := range userIDs {
 		client, exist := clients[userID]
 		if exist {
-			log.Infof("push message(data:%s), user(%s)", msg, userID)
+			log.Infof("streaming log (data:%s), user(%s)", msg, userID)
 			client.sendMessage(msg)
 		}
 	}

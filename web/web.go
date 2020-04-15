@@ -220,12 +220,9 @@ func initInstance(w http.ResponseWriter, r *http.Request) {
 }
 func shutdownInstance(w http.ResponseWriter, r *http.Request) {
 	instanceName := r.URL.Query().Get("instance")
-	if instance, ok := instances[instanceName]; ok {
-		if err := instance.ShutDownCmd().Run(); err == nil {
-			w.Write([]byte("success"))
-		} else {
-			w.Write([]byte(err.Error()))
-		}
+	if _, ok := instances[instanceName]; ok {
+		w.Write([]byte("success"))
+
 	} else {
 		w.Write([]byte("no such instance"))
 	}
@@ -248,10 +245,10 @@ func restartInstance(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		if err := sse.WriteExec(instance.RestartCmd()); err != nil {
-			sse.WriteEvent("failed", []byte(err.Error()))
-			return
-		}
+		// if err := sse.WriteExec(instance.RestartCmd()); err != nil {
+		// 	sse.WriteEvent("failed", []byte(err.Error()))
+		// 	return
+		// }
 		sse.Write([]byte("success"))
 	} else {
 		sse.WriteEvent("failed", []byte("no such instance"))
