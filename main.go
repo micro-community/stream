@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/micro-community/x-streaming/ws"
 	log "github.com/micro/go-micro/v2/logger"
 	"github.com/micro/go-micro/v2/web"
 )
@@ -20,8 +21,12 @@ func main() {
 	srv := web.NewService(web.Version("v1.0.0"))
 
 	srv.Init()
+
 	// static files
-	srv.Handle("/websocket/", http.StripPrefix("/websocket/", http.FileServer(http.Dir("html"))))
+	srv.Handle("/", http.FileServer(http.Dir("html")))
+
+	// Handle websocket connection
+	srv.HandleFunc("/ws", ws.HandleConn)
 
 	//toy code ,will be changed.
 	go Run("config.toml")

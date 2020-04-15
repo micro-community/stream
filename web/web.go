@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -43,10 +42,6 @@ func init() {
 	http.HandleFunc("/instance/restart", restartInstance)
 	http.HandleFunc("/instance/shutdown", shutdownInstance)
 	http.HandleFunc("/", website)
-	fmt.Printf("start listen at %s", *addr)
-	if err := http.ListenAndServe(":"+*addr, nil); err != nil {
-		log.Fatal(err)
-	}
 }
 
 func listDir(w http.ResponseWriter, r *http.Request) {
@@ -116,7 +111,6 @@ func importInstance(w http.ResponseWriter, r *http.Request) {
 				if e = err; err != nil {
 					return
 				}
-
 				instances[name] = &manager.InstanceDesc{
 					Name:    name,
 					Path:    importPath,
