@@ -24,7 +24,7 @@ var config = struct {
 func init() {
 	engine.InstallPlugin(&engine.PluginConfig{
 		Name:    "RTSP",
-		Type:    PLUGIN_PUBLISHER | PLUGIN_HOOK,
+		Type:    engine.PLUGIN_PUBLISHER | engine.PLUGIN_HOOK,
 		Version: "1.0.0",
 		Config:  &config,
 		UI:      util.CurrentDir("dashboard", "ui", "plugin-rtsp.min.js"),
@@ -33,7 +33,7 @@ func init() {
 }
 func runPlugin() {
 	if config.AutoPull {
-		OnSubscribeHooks.AddHook(func(s *OutputStream) {
+		engine.OnSubscribeHooks.AddHook(func(s *engine.OutputStream) {
 			if s.Publisher == nil {
 				new(RTSP).Publish(s.StreamPath, strings.Replace(config.RemoteAddr, "${streamPath}", s.StreamPath, -1))
 			}
@@ -68,7 +68,7 @@ func runPlugin() {
 }
 
 type RTSP struct {
-	InputStream
+	engine.InputStream
 	*RtspClient
 	RTSPInfo
 }
@@ -76,7 +76,7 @@ type RTSPInfo struct {
 	SyncCount  int64
 	Header     *string
 	BufferRate int
-	RoomInfo   *RoomInfo
+	RoomInfo   *engine.RoomInfo
 }
 
 func (rtsp *RTSP) run() {
@@ -87,20 +87,20 @@ func (rtsp *RTSP) run() {
 	ppsHead := []byte{0x01, 0, 0}
 	nalLength := []byte{0, 0, 0, 0}
 
-	av := avformat.NewAVPacket(FLV_TAG_TYPE_VIDEO)
+	av := avformat.NewAVPacket(avformat.FLV_TAG_TYPE_VIDEO)
 	avcsent := false
 	aacsent := false
 	handleNALU := func(nalType byte, payload []byte, ts int64) {
 		rtsp.SyncCount++
 		vl := len(payload)
 		switch nalType {
-		case NALU_SPS:
+		case avformat.NALU_SPS:
 			r := bytes.NewBuffer([]byte{})
-			r.Write(RTMP_AVC_HEAD)
+			r.Write(avformat.RTMP_AVC_HEAD)
 			util.BigEndian.PutUint16(spsHead[1:], uint16(vl))
 			r.Write(spsHead)
 			r.Write(payload)
-		case NALU_PPS:
+		case avformat.NALU_PPS:
 			r := bytes.NewBuffer([]byte{})
 			util.BigEndian.PutUint16(ppsHead[1:], uint16(vl))
 			r.Write(ppsHead)
@@ -109,11 +109,11 @@ func (rtsp *RTSP) run() {
 			av.Payload = r.Bytes()
 			rtsp.PushVideo(av)
 			avcsent = true
-		case NALU_IDR_Picture:
+		case avformat.NALU_IDR_Picture:
 			if !avcsent {
 				r := bytes.NewBuffer([]byte{})
-				av = avformat.NewAVPacket(FLV_TAG_TYPE_VIDEO)
-				r.Write(RTMP_AVC_HEAD)
+				av = avformat.NewAVPacket(avformat.FLV_TAG_TYPE_VIDEO)
+				r.Write(avformat.RTMP_AVC_HEAD)
 				util.BigEndian.PutUint16(spsHead[1:], uint16(len(rtsp.SPS)))
 				r.Write(spsHead)
 				r.Write(rtsp.SPS)
@@ -125,7 +125,7 @@ func (rtsp *RTSP) run() {
 				rtsp.PushVideo(av)
 				avcsent = true
 			}
-			av = avformat.NewAVPacket(FLV_TAG_TYPE_VIDEO)
+			av = avformat.NewAVPacket(avformat.FLV_TAG_TYPE_VIDEO)
 			r := bytes.NewBuffer([]byte{})
 			av.VideoFrameType = 1
 			av.Timestamp = uint32(ts)
@@ -136,8 +136,8 @@ func (rtsp *RTSP) run() {
 			r.Write(payload)
 			av.Payload = r.Bytes()
 			rtsp.PushVideo(av)
-		case NALU_Non_IDR_Picture:
-			av = avformat.NewAVPacket(FLV_TAG_TYPE_VIDEO)
+		case avformat.NALU_Non_IDR_Picture:
+			av = avformat.NewAVPacket(avformat.FLV_TAG_TYPE_VIDEO)
 			r := bytes.NewBuffer([]byte{})
 			av.VideoFrameType = 2
 			av.Timestamp = uint32(ts)
@@ -190,7 +190,7 @@ func (rtsp *RTSP) run() {
 				} else if data[1] == 2 {
 					// audio
 					if !aacsent {
-						av := avformat.NewAVPacket(FLV_TAG_TYPE_AUDIO)
+						av := avformat.NewAVPacket(avformat.FLV_TAG_TYPE_AUDIO)
 						av.Payload = append([]byte{0xAF, 0x00}, rtsp.AudioSpecificConfig...)
 						rtsp.PushAudio(av)
 						aacsent = true
@@ -210,7 +210,7 @@ func (rtsp *RTSP) run() {
 					startOffset := 2 + 2*auHeaderCount
 					for _, auLen := range auLenArray {
 						endOffset := startOffset + auLen
-						av := avformat.NewAVPacket(FLV_TAG_TYPE_AUDIO)
+						av := avformat.NewAVPacket(avformat.FLV_TAG_TYPE_AUDIO)
 						addHead := []byte{0xAF, 0x01}
 						av.Payload = append(addHead, payload[startOffset:endOffset]...)
 						rtsp.PushAudio(av)
