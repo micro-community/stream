@@ -1,8 +1,6 @@
 {
-    "editor": {
-        "codeActionsOnSave": {
-            "source.organizeImports": true
-        },
-        "codeActionsOnSaveTimeout": 750,
-    }
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+    },
+    "editor.codeActionsOnSaveTimeout": 750,
 }
