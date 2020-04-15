@@ -4,15 +4,17 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
 )
 
-// 检查文件或目录是否存在
-// 如果由 filename 指定的文件或目录存在则返回 true，否则返回 false
+// Exist check file or dir exist
 func Exist(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
 }
 
+//ReadFileLines read by line
 func ReadFileLines(filename string) (lines []string, err error) {
 	file, err := os.OpenFile(filename, os.O_RDONLY, 0644)
 	if err != nil {
@@ -36,5 +38,13 @@ func ReadFileLines(filename string) (lines []string, err error) {
 		lines = append(lines, string(line))
 	}
 
-	return
+}
+
+//CurrentDir for working directory
+func CurrentDir(path ...string) string {
+	_, currentFilePath, _, _ := runtime.Caller(1)
+	if len(path) == 0 {
+		return filepath.Dir(currentFilePath)
+	}
+	return filepath.Join(filepath.Dir(currentFilePath), filepath.Join(path...))
 }

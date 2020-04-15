@@ -1,17 +1,27 @@
-// +build windows
-
-package pm
+package manager
 
 import (
+	"bytes"
 	"errors"
-	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
+	"runtime"
+	"strings"
 )
 
+//HomeDir for process
 func HomeDir() (string, error) {
+
+	if runtime.GOOS == "windows" {
+		return WinHomeDir()
+	}
+
+	return LinuxHomeDir()
+
+}
+
+//LinuxHomeDir for *unix
+func LinuxHomeDir() (string, error) {
 	drive := os.Getenv("HOMEDRIVE")
 	path := os.Getenv("HOMEPATH")
 	home := drive + path
@@ -24,14 +34,26 @@ func HomeDir() (string, error) {
 
 	return home, nil
 }
-func (p *InstanceDesc) ShutDownCmd() *exec.Cmd {
-	return p.Command("cmd", "/C", "shutdown.bat")
-}
 
-func (p *InstanceDesc) RestartCmd() *exec.Cmd {
-	return p.Command("cmd", "/C", "restart.bat")
-}
-func (p *InstanceDesc) CreateRestartFile(binFile string) error {
-	return ioutil.WriteFile(path.Join(p.Path, "restart.bat"), []byte(fmt.Sprintf(`call shutdown.bat
-start %s`, binFile)), 0777)
+//WinHomeDir for Win
+func WinHomeDir() (string, error) {
+	// First prefer the HOME environmental variable
+	if home := os.Getenv("HOME"); home != "" {
+		return home, nil
+	}
+
+	// If that fails, try the shell
+	var stdout bytes.Buffer
+	cmd := exec.Command("sh", "-c", "eval echo ~$USER")
+	cmd.Stdout = &stdout
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+
+	result := strings.TrimSpace(stdout.String())
+	if result == "" {
+		return "", errors.New("blank output when reading home directory")
+	}
+
+	return result, nil
 }

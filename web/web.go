@@ -21,10 +21,10 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/micro-community/x-streaming/engine"
 	"github.com/micro-community/x-streaming/engine/util"
-	pm "github.com/micro-community/x-streaming/manager"
+	"github.com/micro-community/x-streaming/manager"
 )
 
-var instances = make(map[string]*pm.InstanceDesc)
+var instances = make(map[string]*manager.InstanceDesc)
 var instancesDir string
 
 func init() {
@@ -116,7 +116,8 @@ func importInstance(w http.ResponseWriter, r *http.Request) {
 				if e = err; err != nil {
 					return
 				}
-				instances[name] = &pm.InstanceDesc{
+
+				instances[name] = &manager.InstanceDesc{
 					Name:    name,
 					Path:    importPath,
 					Plugins: nil,
@@ -151,7 +152,7 @@ func readInstances() error {
 				return err
 			} else {
 				for _, configFile := range cs {
-					des := new(pm.InstanceDesc)
+					des := new(manager.InstanceDesc)
 					if _, err = toml.DecodeFile(path.Join(instancesDir, configFile.Name()), des); err == nil {
 						instances[des.Name] = des
 					} else {
@@ -194,7 +195,7 @@ func listInstance(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func initInstance(w http.ResponseWriter, r *http.Request) {
-	instanceDesc := new(pm.InstanceDesc)
+	instanceDesc := new(manager.InstanceDesc)
 	sse := util.NewSSE(w, r.Context())
 	err := json.Unmarshal([]byte(r.URL.Query().Get("info")), instanceDesc)
 	clearDir := r.URL.Query().Get("clear") != ""
@@ -283,9 +284,11 @@ func updateConfig(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("no such instance"))
 	}
 }
+
+//Home for proc
 func Home() (string, error) {
 	if user, err := user.Current(); nil == err {
 		return user.HomeDir, nil
 	}
-	return pm.HomeDir()
+	return manager.HomeDir()
 }
