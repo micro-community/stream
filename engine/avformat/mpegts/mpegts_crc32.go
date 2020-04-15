@@ -2,8 +2,8 @@ package mpegts
 
 // http://www.stmc.edu.hk/~vincent/ffmpeg_0.4.9-pre1/libavformat/mpegtsenc.c
 
-//Crc32_Table for crc32 computing
-var Crc32_Table = []uint32{
+//Crc32TableTSPackage for crc32 computing
+var Crc32TableTSPackage = []uint32{
 	0x00000000, 0x04c11db7, 0x09823b6e, 0x0d4326d9, 0x130476dc, 0x17c56b6b,
 	0x1a864db2, 0x1e475005, 0x2608edb8, 0x22c9f00f, 0x2f8ad6d6, 0x2b4bcb61,
 	0x350c9b64, 0x31cd86d3, 0x3c8ea00a, 0x384fbdbd, 0x4c11db70, 0x48d0c6c7,
@@ -54,7 +54,7 @@ func GetCRC32(data []byte) (crc uint32) {
 	crc = 0xffffffff
 
 	for _, v := range data {
-		crc = (crc << 8) ^ Crc32_Table[((crc>>24)^uint32(v))&0xff]
+		crc = (crc << 8) ^ Crc32TableTSPackage[((crc>>24)^uint32(v))&0xff]
 
 	}
 
