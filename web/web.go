@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"flag"
 	"io"
 	"io/ioutil"
 	"log"
@@ -32,10 +31,8 @@ func init() {
 	if engine.MayBeError(readInstances()) {
 		return
 	}
-	addr := flag.String("port", "8000", "http server port")
-	flag.Parse()
+
 	http.HandleFunc("/instance/listDir", listDir)
-	http.HandleFunc("/instance/import", importInstance)
 	http.HandleFunc("/instance/updateConfig", updateConfig)
 	http.HandleFunc("/instance/list", listInstance)
 	http.HandleFunc("/instance/create", initInstance)
@@ -134,6 +131,7 @@ func importInstance(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Write([]byte("参数错误"))
 	}
+
 }
 
 func readInstances() error {

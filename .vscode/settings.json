@@ -1,6 +1,8 @@
 {
-    "editor.codeActionsOnSave": {
-        "source.organizeImports": true
-    },
+    "go.testFlags": ["-v"],
+    "cSpell.allowCompoundWords": true,
+    "go.formatTool": "goimports",
+    "go.useLanguageServer": true,
+    "editor.codeActionsOnSave": {"source.organizeImports": true},
     "editor.codeActionsOnSaveTimeout": 750,
 }
