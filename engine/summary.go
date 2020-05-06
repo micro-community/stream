@@ -10,10 +10,10 @@ import (
 	"github.com/shirou/gopsutil/net"
 )
 
-var (
-	Summary = ServerSummary{}
-)
+// Summary 系统摘要数据
+var Summary = ServerSummary{}
 
+// ServerSummary 系统摘要定义
 type ServerSummary struct {
 	Address string
 	Memory  struct {
@@ -30,13 +30,15 @@ type ServerSummary struct {
 		Usage float64
 	}
 	NetWork     []NetWorkInfo
-	Rooms       []*RoomInfo
+	Streams     []*StreamInfo
 	lastNetWork []NetWorkInfo
 	ref         int
 	control     chan bool
 	reportChan  chan *ServerSummary
 	Children    map[string]*ServerSummary
 }
+
+// NetWorkInfo 网速信息
 type NetWorkInfo struct {
 	Name         string
 	Receive      uint64
@@ -45,6 +47,7 @@ type NetWorkInfo struct {
 	SentSpeed    uint64
 }
 
+//StartSummary 开始定时采集数据，每秒一次
 func (s *ServerSummary) StartSummary() {
 	ticker := time.NewTicker(time.Second)
 	s.control = make(chan bool)
@@ -73,15 +76,23 @@ func (s *ServerSummary) StartSummary() {
 		}
 	}
 }
+
+// Running 是否正在采集数据
 func (s *ServerSummary) Running() bool {
 	return s.ref > 0
 }
+
+// Add 增加订阅者
 func (s *ServerSummary) Add() {
 	s.control <- true
 }
+
+// Done 删除订阅者
 func (s *ServerSummary) Done() {
 	s.control <- false
 }
+
+// Report 上报数据
 func (s *ServerSummary) Report(slave *ServerSummary) {
 	s.reportChan <- slave
 }
@@ -133,10 +144,5 @@ func (s *ServerSummary) collect() {
 	//fmt.Printf("        HD        : %v GB  Free: %v GB Usage:%f%%\n", d.Total/1024/1024/1024, d.Free/1024/1024/1024, d.UsedPercent)
 	//fmt.Printf("        OS        : %v(%v)   %v  \n", n.Platform, n.PlatformFamily, n.PlatformVersion)
 	//fmt.Printf("        Hostname  : %v  \n", n.Hostname)
-	s.Rooms = nil
-	AllRoom.Range(func(key interface{}, v interface{}) bool {
-		s.Rooms = append(s.Rooms, &v.(*Room).RoomInfo)
-		return true
-	})
 	return
 }
