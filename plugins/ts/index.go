@@ -1,18 +1,58 @@
-package HLS
+package ts
 
 import (
 	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
-	. "github.com/micro-community/x-streaming/engine"
+	"github.com/micro-community/x-streaming/engine"
 	"github.com/micro-community/x-streaming/engine/avformat"
 	"github.com/micro-community/x-streaming/engine/avformat/mpegts"
 	"github.com/micro-community/x-streaming/engine/util"
 )
 
+var config = struct {
+	BufferLength int
+	Path         string
+	AutoPublish  bool
+}{2048, "ts", true}
+
+func init() {
+	engine.InstallPlugin(&engine.PluginConfig{
+		Name:   "TS",
+		Type:   engine.PLUGIN_PUBLISHER,
+		Config: &config,
+		HotConfig: map[string]func(interface{}){
+			"AutoPublish": func(value interface{}) {
+				config.AutoPublish = value.(bool)
+			},
+		},
+		Run: func() {
+			engine.OnSubscribeHooks.AddHook(func(s *engine.Subscriber) {
+				if config.AutoPublish && s.Publisher == nil {
+					go new(TS).PublishDir(s.StreamPath)
+				}
+			})
+
+			http.HandleFunc("/ts/list", listTsDir)
+			http.HandleFunc("/ts/publish", publishTsDir)
+		},
+	})
+}
+
+type TSDir struct {
+	StreamPath string
+	TsCount    int
+	TotalSize  int64
+}
 type TS struct {
-	InputStream
+	Publisher
 	*mpegts.MpegTsStream
 	TSInfo
 	//TsChan     chan io.Reader
@@ -25,7 +65,7 @@ type TSInfo struct {
 	DTS           uint64
 	PesCount      int
 	BufferLength  int
-	RoomInfo      *RoomInfo
+	StreamInfo    *StreamInfo
 }
 
 func (ts *TS) run() {
@@ -55,16 +95,13 @@ func (ts *TS) run() {
 						if frameLen > remainLen {
 							break
 						}
-						av := avformat.NewAVPacket(avformat.FLV_TAG_TYPE_AUDIO)
-						av.Payload = data[:frameLen]
-						ts.PushAudio(av)
+						ts.PushAudio(uint32(tsPesPkt.PesPkt.Header.Pts/90), data[:frameLen])
 						data = data[frameLen:remainLen]
 						remainLen = remainLen - frameLen
 					}
 
 				case mpegts.STREAM_ID_VIDEO:
 					var err error
-					av := avformat.NewAVPacket(avformat.FLV_TAG_TYPE_VIDEO)
 					ts.PTS = tsPesPkt.PesPkt.Header.Pts
 					ts.DTS = tsPesPkt.PesPkt.Header.Dts
 					lastDts := ts.lastDts
@@ -73,7 +110,6 @@ func (ts *TS) run() {
 					if dts == 0 {
 						dts = pts
 					}
-					av.Timestamp = uint32(dts / 90)
 					if ts.lastDts == 0 {
 						ts.lastDts = dts
 					}
@@ -105,16 +141,11 @@ func (ts *TS) run() {
 							util.BigEndian.PutUint16(ppsHead[1:], uint16(vl))
 							_, err = r.Write(ppsHead)
 							_, err = r.Write(v)
-							av.VideoFrameType = 1
-							av.Payload = r.Bytes()
-							ts.PushVideo(av)
-							av = avformat.NewAVPacket(avformat.FLV_TAG_TYPE_VIDEO)
-							av.Timestamp = uint32(dts / 90)
+							ts.PushVideo(0, r.Bytes())
 							r = bytes.NewBuffer([]byte{})
 							continue
 						case avformat.NALU_IDR_Picture:
 							if isFirst {
-								av.VideoFrameType = 1
 								util.BigEndian.PutUint24(iframeHead[2:], compostionTime)
 								_, err = r.Write(iframeHead)
 							}
@@ -122,9 +153,8 @@ func (ts *TS) run() {
 							_, err = r.Write(nalLength)
 						case avformat.NALU_Non_IDR_Picture:
 							if isFirst {
-								av.VideoFrameType = 2
 								util.BigEndian.PutUint24(pframeHead[2:], compostionTime)
-								_, err = r.Write(iframeHead)
+								_, err = r.Write(pframeHead)
 							} else {
 								ts.IsSplitFrame = true
 							}
@@ -138,15 +168,14 @@ func (ts *TS) run() {
 					if MayBeError(err) {
 						return
 					}
-					av.Payload = r.Bytes()
-					ts.PushVideo(av)
+					ts.PushVideo(uint32(dts/90), r.Bytes())
 					t2 := time.Since(t1)
 					if duration != 0 && t2 < duration {
 						if duration < time.Second {
 							//if ts.BufferLength > 50 {
 							duration = duration - t2
 							//}
-							if ts.BufferLength > 150 {
+							if ts.BufferLength > 300 {
 								duration = duration - duration*time.Duration(ts.BufferLength)/time.Duration(totalBuffer)
 							}
 							time.Sleep(duration)
@@ -160,12 +189,72 @@ func (ts *TS) run() {
 		}
 	}
 }
-
-func (ts *TS) Publish(streamPath string, publisher Publisher) (result bool) {
-	if result = ts.InputStream.Publish(streamPath, publisher); result {
+func (ts *TS) Publish(streamPath string) (result bool) {
+	if result = ts.Publisher.Publish(streamPath); result {
+		ts.Type = "TS"
 		ts.TSInfo.StreamInfo = &ts.Stream.StreamInfo
-		ts.MpegTsStream = mpegts.NewMpegTsStream(2048)
+		ts.MpegTsStream = mpegts.NewMpegTsStream(config.BufferLength)
 		go ts.run()
 	}
 	return
+}
+func (ts *TS) PublishDir(streamPath string) {
+	dirPath := filepath.Join(config.Path, streamPath)
+	files, err := ioutil.ReadDir(dirPath)
+	if err != nil || len(files) == 0 {
+		return
+	}
+	if ts.Publisher.Publish(strings.ReplaceAll(streamPath, "\\", "/")) {
+		ts.Type = "TSFiles"
+		ts.TSInfo.StreamInfo = &ts.Stream.StreamInfo
+		ts.MpegTsStream = mpegts.NewMpegTsStream(0)
+		go ts.run()
+		for _, file := range files {
+			fullPath := filepath.Join(dirPath, file.Name())
+			if filepath.Ext(fullPath) == ".ts" {
+				if data, err := os.Open(fullPath); err == nil {
+					ts.Feed(data)
+					data.Close()
+				}
+			}
+		}
+		ts.Close()
+	}
+}
+func publishTsDir(w http.ResponseWriter, r *http.Request) {
+	streamPath := r.URL.Query().Get("streamPath")
+	go new(TS).PublishDir(streamPath)
+}
+func readTsDir(currentDir string) []*TSDir {
+	var list []*TSDir
+	abDir := filepath.Join(config.Path, currentDir)
+	if items, err := ioutil.ReadDir(abDir); err == nil {
+		tscount := 0
+		var totalSize int64
+		for _, file := range items {
+			if file.IsDir() {
+				list = append(list, readTsDir(filepath.Join(currentDir, file.Name()))...)
+			} else if filepath.Ext(filepath.Join(abDir, file.Name())) == ".ts" {
+				tscount++
+				totalSize = totalSize + file.Size()
+			}
+		}
+		if tscount > 0 {
+			info := TSDir{
+				currentDir, tscount, totalSize,
+			}
+			list = append(list, &info)
+		}
+	}
+	return list
+}
+func listTsDir(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var list []*TSDir = readTsDir(".")
+	bytes, err := json.Marshal(list)
+	if err == nil {
+		w.Write(bytes)
+	} else {
+		w.Write([]byte("{\"code\":1}"))
+	}
 }
