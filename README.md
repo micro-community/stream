@@ -15,6 +15,6 @@ a streaming service built on go-micro ecosystem
 + [websocket-streamserver](https://github.com/use-go/websocket-streamserver)
 + [websocket-mse](https://github.com/elsampsa/websocket-mse-demo)
 
-## License 
+## License
 
 GPL-3.0
