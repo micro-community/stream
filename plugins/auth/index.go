@@ -29,7 +29,7 @@ func init() {
 	})
 }
 
-func onPublish(r *engine.Room) {
+func onPublish(r *engine.Stream) {
 	for _, v := range r.Subscribers {
 		if err := CheckSign(v.Sign); err != nil {
 			log.Printf("%s in room %s:%v", v.ID, r.StreamPath, err)

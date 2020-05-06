@@ -36,7 +36,7 @@ func init() {
 	})
 }
 func run() {
-	OnDropHooks.AddHook(func(s *OutputStream) {
+	OnDropHooks.AddHook(func(s *Subscriber) {
 		if s.TotalDrop > s.TotalPacket>>2 {
 			var newStreamPath = ""
 			for i, suf := range config.Suffix {

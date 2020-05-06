@@ -40,7 +40,7 @@ func HDLHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Transfer-Encoding", "chunked")
 		w.Header().Set("Content-Type", "video/x-flv")
 		w.Write(avformat.FLVHeader)
-		p := engine.OutputStream{
+		p := engine.Subscriber{
 			Sign: sign,
 			SendHandler: func(packet *avformat.SendPacket) error {
 				return avformat.WriteFLVTag(w, packet)

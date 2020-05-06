@@ -52,7 +52,7 @@ func stopPublish(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	if streamPath := r.URL.Query().Get("stream"); streamPath != "" {
 		if b, ok := engine.AllRoom.Load(streamPath); ok {
-			b.(*engine.Room).Cancel()
+			b.(*engine.Stream).Cancel()
 			w.Write([]byte("success"))
 		} else {
 			w.Write([]byte("no query stream"))

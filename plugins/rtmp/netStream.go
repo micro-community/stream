@@ -53,7 +53,7 @@ var gstreamid = uint32(64)
 
 func processRtmp(conn net.Conn) {
 	var room *Room
-	streams := make(map[uint32]*OutputStream)
+	streams := make(map[uint32]*Subscriber)
 	defer func() {
 		conn.Close()
 		if room != nil {
@@ -104,7 +104,7 @@ func processRtmp(conn net.Conn) {
 					pub := new(RTMP)
 					if pub.Publish(streamPath, pub) {
 						pub.FirstScreen = make([]*avformat.AVPacket, 0)
-						room = pub.Room
+						room = pub.Stream
 						err = nc.SendMessage(SEND_STREAM_BEGIN_MESSAGE, nil)
 						err = nc.SendMessage(SEND_PUBLISH_START_MESSAGE, newPublishResponseMessageData(nc.streamID, NetStream_Publish_Start, Level_Status))
 					} else {
@@ -114,7 +114,7 @@ func processRtmp(conn net.Conn) {
 					pm := msg.MsgData.(*PlayMessage)
 					streamPath := nc.appName + "/" + strings.Split(pm.StreamName, "?")[0]
 					nc.writeChunkSize = 512
-					stream := &OutputStream{SendHandler: func(packet *avformat.SendPacket) (err error) {
+					stream := &Subscriber{SendHandler: func(packet *avformat.SendPacket) (err error) {
 						switch true {
 						case packet.Packet.IsADTS:
 							tagPacket := avformat.NewAVPacket(RTMP_MSG_AUDIO)

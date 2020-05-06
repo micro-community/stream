@@ -122,7 +122,7 @@ func onSummary(start bool) {
 	})
 }
 
-func onSubscribe(s *engine.OutputStream) {
+func onSubscribe(s *engine.Subscriber) {
 	if s.Publisher == nil {
 		go PullUpStream(s.StreamPath)
 	}

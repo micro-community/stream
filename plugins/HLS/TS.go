@@ -163,7 +163,7 @@ func (ts *TS) run() {
 
 func (ts *TS) Publish(streamPath string, publisher Publisher) (result bool) {
 	if result = ts.InputStream.Publish(streamPath, publisher); result {
-		ts.TSInfo.RoomInfo = &ts.Room.RoomInfo
+		ts.TSInfo.StreamInfo = &ts.Stream.StreamInfo
 		ts.MpegTsStream = mpegts.NewMpegTsStream(2048)
 		go ts.run()
 	}

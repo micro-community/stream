@@ -55,7 +55,7 @@ func process(conn net.Conn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	connAddr := conn.RemoteAddr().String()
-	stream := engine.OutputStream{
+	stream := engine.Subscriber{
 		SendHandler: func(p *avformat.SendPacket) error {
 			head := pool.GetSlice(9)
 			head[0] = p.Packet.Type - 7
@@ -86,7 +86,7 @@ func process(conn net.Conn) {
 		bytes = bytes[0 : len(bytes)-1]
 		switch cmd {
 		case MSG_SUBSCRIBE:
-			if stream.Room != nil {
+			if stream.Stream != nil {
 				fmt.Printf("bare stream already exist from %s", conn.RemoteAddr())
 				return
 			}

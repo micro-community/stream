@@ -27,7 +27,7 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	baseStream := OutputStream{Sign: sign}
+	baseStream := Subscriber{Sign: sign}
 	baseStream.ID = conn.RemoteAddr().String()
 	defer conn.Close()
 	if isFlv {

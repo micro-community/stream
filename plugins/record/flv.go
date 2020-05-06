@@ -40,7 +40,7 @@ func SaveFlv(streamPath string, append bool) error {
 	if err != nil {
 		return err
 	}
-	p := OutputStream{SendHandler: func(packet *avformat.SendPacket) error {
+	p := Subscriber{SendHandler: func(packet *avformat.SendPacket) error {
 		return avformat.WriteFLVTag(file, packet)
 	}}
 	p.ID = filePath

@@ -64,7 +64,7 @@ func run() {
 		if streamPath := r.URL.Query().Get("streamPath"); streamPath != "" {
 			filePath := config.Path + streamPath + ".flv"
 			if stream, ok := recordings.Load(filePath); ok {
-				output := stream.(*OutputStream)
+				output := stream.(*Subscriber)
 				output.Close()
 				w.Write([]byte("success"))
 			} else {
@@ -102,7 +102,7 @@ func run() {
 		}
 	})
 }
-func onSubscribe(s *OutputStream) {
+func onSubscribe(s *Subscriber) {
 	filePath := config.Path + s.StreamPath + ".flv"
 	if s.Publisher == nil && PathExists(filePath) {
 		PublishFlvFile(s.StreamPath)

@@ -33,7 +33,7 @@ func init() {
 }
 func runPlugin() {
 	if config.AutoPull {
-		engine.OnSubscribeHooks.AddHook(func(s *engine.OutputStream) {
+		engine.OnSubscribeHooks.AddHook(func(s *engine.Subscriber) {
 			if s.Publisher == nil {
 				new(RTSP).Publish(s.StreamPath, strings.Replace(config.RemoteAddr, "${streamPath}", s.StreamPath, -1))
 			}
@@ -76,7 +76,7 @@ type RTSPInfo struct {
 	SyncCount  int64
 	Header     *string
 	BufferRate int
-	RoomInfo   *engine.RoomInfo
+	RoomInfo   *engine.StreamInfo
 }
 
 func (rtsp *RTSP) run() {
@@ -225,7 +225,7 @@ func (rtsp *RTSP) run() {
 //Publish a rtsp stream
 func (rtsp *RTSP) Publish(streamPath string, rtspUrl string) (result bool) {
 	if result = rtsp.InputStream.Publish(streamPath, rtsp); result {
-		rtsp.RTSPInfo.RoomInfo = &rtsp.Room.RoomInfo
+		rtsp.RTSPInfo.StreamInfo = &rtsp.Stream.StreamInfo
 		rtsp.Client = NewClient(config.BufferLength)
 		rtsp.RTSPInfo.Header = &rtsp.Client.Header
 		if status, message := rtsp.Client.Client(rtspUrl); !status {

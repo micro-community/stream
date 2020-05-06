@@ -19,7 +19,7 @@ type Receiver struct {
 	*bufio.Writer
 }
 
-func (p *Receiver) Auth(authSub *OutputStream) {
+func (p *Receiver) Auth(authSub *Subscriber) {
 	p.WriteByte(MSG_AUTH)
 	p.WriteString(authSub.ID + "," + authSub.Sign)
 	p.WriteByte(0)
