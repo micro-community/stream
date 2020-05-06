@@ -13,11 +13,12 @@ var (
 	)
 )
 
-//RecycleSlice free slice
+//RecycleSlice 回收
 func RecycleSlice(slice []byte) {
 	slicePool.Free(slice)
 }
 
+//GetSlice 获取流
 func GetSlice(s int) []byte {
 	return slicePool.Alloc(s)
 }
