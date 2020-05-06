@@ -43,17 +43,17 @@ type Client struct {
 	responce            string   //responce string
 	bauth               string   //string b auth
 	track               []string //rtsp track
-	cseq                int      //qury number
-	videow              int
-	videoh              int
+	cseq                int      //query number
+	videoWidth          int
+	videoHeigh          int
 	SPS                 []byte
 	PPS                 []byte
 	Header              string
 	AudioSpecificConfig []byte
 }
 
-//RtspClientNew 返回空的初始化对象
-func RtspClientNew(bufferLength int) *Client {
+//NewClient 返回空的初始化对象
+func NewClient(bufferLength int) *Client {
 	Obj := &Client{
 		cseq:     1,                               //查询起始号码
 		Signals:  make(chan bool, 1),              //一个消息缓冲通道
@@ -218,7 +218,6 @@ func (c *Client) Client(rtsp_url string) (bool, string) {
 		go c.RtspRtpLoop()
 		return true, "ok"
 	}
-	return false, "other error"
 }
 
 /*
@@ -260,7 +259,7 @@ func (c *Client) RtspRtpLoop() {
 	header := make([]byte, 4)
 	payload := make([]byte, 4096)
 	//sync := make([]byte, 256)
-	sync_b := make([]byte, 1)
+	syncB := make([]byte, 1)
 	timer := time.Now()
 	for {
 		if int(time.Now().Sub(timer).Seconds()) > 50 {
@@ -280,9 +279,9 @@ func (c *Client) RtspRtpLoop() {
 			//log.Println("desync?", c.host)
 			for {
 				///////////////////////////skeep/////////////////////////////////////
-				if n, err := io.ReadFull(c.socket, sync_b); err != nil && n != 1 {
+				if n, err := io.ReadFull(c.socket, syncB); err != nil && n != 1 {
 					return
-				} else if sync_b[0] == 36 {
+				} else if syncB[0] == 36 {
 					header[0] = 36
 					if n, err := io.ReadFull(c.socket, header[1:]); err != nil && n == 3 {
 						return
@@ -504,6 +503,8 @@ func GetMD5Hash(text string) string {
 	hash := md5.Sum([]byte(text))
 	return hex.EncodeToString(hash[:])
 }
+
+//ParseMedia parse head
 func (c *Client) ParseMedia(header string) []string {
 	letters := []string{}
 	log.Println(header)
@@ -531,8 +532,8 @@ func (c *Client) ParseMedia(header string) []string {
 				dims = append(dims, v)
 			}
 			if len(dims) == 2 {
-				c.videow = dims[0]
-				c.videoh = dims[1]
+				c.videoWidth = dims[0]
+				c.videoHeigh = dims[1]
 			}
 		}
 		group := spropReg.FindAllStringSubmatch(element, -1)

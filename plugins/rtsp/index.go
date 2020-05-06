@@ -226,7 +226,7 @@ func (rtsp *RTSP) run() {
 func (rtsp *RTSP) Publish(streamPath string, rtspUrl string) (result bool) {
 	if result = rtsp.InputStream.Publish(streamPath, rtsp); result {
 		rtsp.RTSPInfo.RoomInfo = &rtsp.Room.RoomInfo
-		rtsp.Client = RtspClientNew(config.BufferLength)
+		rtsp.Client = NewClient(config.BufferLength)
 		rtsp.RTSPInfo.Header = &rtsp.Client.Header
 		if status, message := rtsp.Client.Client(rtspUrl); !status {
 			log.Println(message)
