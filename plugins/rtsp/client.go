@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+//RTSP Setting
 var (
 	VideoWidth  int
 	VideoHeight int
@@ -27,7 +28,8 @@ func init() {
 	configReg, _ = regexp.Compile("config=([^;]+)")
 }
 
-type RtspClient struct {
+//Client Params
+type Client struct {
 	socket              net.Conn
 	OutGoing            chan []byte //out chanel
 	Signals             chan bool   //Signals quit
@@ -51,8 +53,8 @@ type RtspClient struct {
 }
 
 //RtspClientNew 返回空的初始化对象
-func RtspClientNew(bufferLength int) *RtspClient {
-	Obj := &RtspClient{
+func RtspClientNew(bufferLength int) *Client {
+	Obj := &Client{
 		cseq:     1,                               //查询起始号码
 		Signals:  make(chan bool, 1),              //一个消息缓冲通道
 		OutGoing: make(chan []byte, bufferLength), //输出通道
@@ -60,75 +62,75 @@ func RtspClientNew(bufferLength int) *RtspClient {
 	return Obj
 }
 
-func (this *RtspClient) Client(rtsp_url string) (bool, string) {
+func (c *Client) Client(rtsp_url string) (bool, string) {
 	//Check back url
-	if !this.ParseUrl(rtsp_url) {
+	if !c.ParseUrl(rtsp_url) {
 		return false, "Incorrect url"
 	}
 	//Install connect to camera
-	if !this.Connect() {
+	if !c.Connect() {
 		return false, "cannot connect"
 	}
 	//Phase 1 options camera phase 1
 	//Send options request
-	if !this.Write("OPTIONS " + this.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + "\r\n\r\n") {
+	if !c.Write("OPTIONS " + c.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + "\r\n\r\n") {
 		return false, "Unable to send options message"
 	}
 	//Read the response to the options request
-	if status, message := this.Read(); !status {
+	if status, message := c.Read(); !status {
 		return false, "Unable to read options response connection lost"
 	} else if status && strings.Contains(message, "Digest") {
-		if !this.AuthDigest("OPTIONS", message) {
+		if !c.AuthDigest("OPTIONS", message) {
 			return false, "Summary of authorization required"
 		}
 	} else if status && strings.Contains(message, "Basic") {
-		if !this.AuthBasic("OPTIONS", message) {
+		if !c.AuthBasic("OPTIONS", message) {
 			return false, "Need certification Basic"
 		}
 	} else if !strings.Contains(message, "200") {
 		return false, "error OPTIONS not status code 200 OK " + message
 	}
 
-	//PHASE 2 DESCRIBE
-	log.Println("DESCRIBE " + this.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + this.bauth + "\r\n\r\n")
-	if !this.Write("DESCRIBE " + this.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + this.bauth + "\r\n\r\n") {
+	////////////PHASE 2 DESCRIBE
+	log.Println("DESCRIBE " + c.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + c.bauth + "\r\n\r\n")
+	if !c.Write("DESCRIBE " + c.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + c.bauth + "\r\n\r\n") {
 		return false, "Unable to send query DESCRIBE"
 	}
-	if status, message := this.Read(); !status {
+	if status, message := c.Read(); !status {
 		return false, "Can't read response for decscribe connection loss?"
 	} else if status && strings.Contains(message, "Digest") {
-		if !this.AuthDigest("DESCRIBE", message) {
+		if !c.AuthDigest("DESCRIBE", message) {
 			return false, "Summary of authorization required"
 		}
 	} else if status && strings.Contains(message, "Basic") {
-		if !this.AuthBasic("DESCRIBE", message) {
+		if !c.AuthBasic("DESCRIBE", message) {
 			return false, "Basis of authorization required"
 		}
 	} else if !strings.Contains(message, "200") {
 		return false, "error DESCRIBE not status code 200 OK " + message
 	} else {
-		this.Header = message
-		this.track = this.ParseMedia(message)
+		c.Header = message
+		c.track = c.ParseMedia(message)
 
 	}
-	if len(this.track) == 0 {
+	if len(c.track) == 0 {
 		return false, "error track not found "
 	}
 	//PHASE 3 SETUP
-	log.Println("SETUP " + this.uri + "/" + this.track[0] + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + "\r\nTransport: RTP/AVP/TCP;unicast;interleaved=0-1" + this.bauth + "\r\n\r\n")
-	if !this.Write("SETUP " + this.uri + "/" + this.track[0] + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + "\r\nTransport: RTP/AVP/TCP;unicast;interleaved=0-1" + this.bauth + "\r\n\r\n") {
+	log.Println("SETUP " + c.uri + "/" + c.track[0] + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + "\r\nTransport: RTP/AVP/TCP;unicast;interleaved=0-1" + c.bauth + "\r\n\r\n")
+	if !c.Write("SETUP " + c.uri + "/" + c.track[0] + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + "\r\nTransport: RTP/AVP/TCP;unicast;interleaved=0-1" + c.bauth + "\r\n\r\n") {
 		return false, ""
 	}
-	if status, message := this.Read(); !status {
+	if status, message := c.Read(); !status {
 		return false, "Unable to read response for missing setup connection."
 
 	} else if !strings.Contains(message, "200") {
 		if strings.Contains(message, "401") {
-			str := this.AuthDigest_Only("SETUP", message)
-			if !this.Write("SETUP " + this.uri + "/" + this.track[0] + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + "\r\nTransport: RTP/AVP/TCP;unicast;interleaved=0-1" + this.bauth + str + "\r\n\r\n") {
+			str := c.AuthDigest_Only("SETUP", message)
+			if !c.Write("SETUP " + c.uri + "/" + c.track[0] + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + "\r\nTransport: RTP/AVP/TCP;unicast;interleaved=0-1" + c.bauth + str + "\r\n\r\n") {
 				return false, ""
 			}
-			if status, message := this.Read(); !status {
+			if status, message := c.Read(); !status {
 				return false, "Unable to read response for missing setup connection."
 
 			} else if !strings.Contains(message, "200") {
@@ -136,31 +138,31 @@ func (this *RtspClient) Client(rtsp_url string) (bool, string) {
 				return false, "error SETUP not status code 200 OK " + message
 
 			} else {
-				this.session = ParseSession(message)
+				c.session = ParseSession(message)
 			}
 		} else {
 			return false, "error SETUP not status code 200 OK " + message
 		}
 	} else {
 		log.Println(message)
-		this.session = ParseSession(message)
-		log.Println(this.session)
+		c.session = ParseSession(message)
+		log.Println(c.session)
 	}
-	if len(this.track) > 1 {
+	if len(c.track) > 1 {
 
-		if !this.Write("SETUP " + this.uri + "/" + this.track[1] + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + "\r\nTransport: RTP/AVP/TCP;unicast;interleaved=2-3" + "\r\nSession: " + this.session + this.bauth + "\r\n\r\n") {
+		if !c.Write("SETUP " + c.uri + "/" + c.track[1] + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + "\r\nTransport: RTP/AVP/TCP;unicast;interleaved=2-3" + "\r\nSession: " + c.session + c.bauth + "\r\n\r\n") {
 			return false, ""
 		}
-		if status, message := this.Read(); !status {
+		if status, message := c.Read(); !status {
 			return false, "Unable to read response for missing setup audio connection."
 
 		} else if !strings.Contains(message, "200") {
 			if strings.Contains(message, "401") {
-				str := this.AuthDigest_Only("SETUP", message)
-				if !this.Write("SETUP " + this.uri + "/" + this.track[1] + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + "\r\nTransport: RTP/AVP/TCP;unicast;interleaved=2-3" + this.bauth + str + "\r\n\r\n") {
+				str := c.AuthDigest_Only("SETUP", message)
+				if !c.Write("SETUP " + c.uri + "/" + c.track[1] + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + "\r\nTransport: RTP/AVP/TCP;unicast;interleaved=2-3" + c.bauth + str + "\r\n\r\n") {
 					return false, ""
 				}
-				if status, message := this.Read(); !status {
+				if status, message := c.Read(); !status {
 					return false, "Unable to read response for missing setup audio connection."
 
 				} else if !strings.Contains(message, "200") {
@@ -169,33 +171,33 @@ func (this *RtspClient) Client(rtsp_url string) (bool, string) {
 
 				} else {
 					log.Println(message)
-					this.session = ParseSession(message)
+					c.session = ParseSession(message)
 				}
 			} else {
 				return false, "error SETUP not status code 200 OK " + message
 			}
 		} else {
 			log.Println(message)
-			this.session = ParseSession(message)
+			c.session = ParseSession(message)
 		}
 	}
 
 	//PHASE 4 SETUP
-	log.Println("PLAY " + this.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + "\r\nSession: " + this.session + this.bauth + "\r\n\r\n")
-	if !this.Write("PLAY " + this.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + "\r\nSession: " + this.session + this.bauth + "\r\n\r\n") {
+	log.Println("PLAY " + c.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + "\r\nSession: " + c.session + c.bauth + "\r\n\r\n")
+	if !c.Write("PLAY " + c.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + "\r\nSession: " + c.session + c.bauth + "\r\n\r\n") {
 		return false, ""
 	}
-	if status, message := this.Read(); !status {
+	if status, message := c.Read(); !status {
 		return false, "Unable to read play response lost connection"
 
 	} else if !strings.Contains(message, "200") {
 		//return false, "Ошибка PLAY not status code 200 OK " + message
 		if strings.Contains(message, "401") {
-			str := this.AuthDigest_Only("PLAY", message)
-			if !this.Write("PLAY " + this.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + "\r\nSession: " + this.session + this.bauth + str + "\r\n\r\n") {
+			str := c.AuthDigest_Only("PLAY", message)
+			if !c.Write("PLAY " + c.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + "\r\nSession: " + c.session + c.bauth + str + "\r\n\r\n") {
 				return false, ""
 			}
-			if status, message := this.Read(); !status {
+			if status, message := c.Read(); !status {
 				return false, "Unable to read play response lost connection"
 
 			} else if !strings.Contains(message, "200") {
@@ -203,9 +205,9 @@ func (this *RtspClient) Client(rtsp_url string) (bool, string) {
 				return false, "error PLAY not status code 200 OK " + message
 
 			} else {
-				//this.session = ParseSession(message)
+				//c.session = ParseSession(message)
 				log.Print(message)
-				go this.RtspRtpLoop()
+				go c.RtspRtpLoop()
 				return true, "ok"
 			}
 		} else {
@@ -213,7 +215,7 @@ func (this *RtspClient) Client(rtsp_url string) (bool, string) {
 		}
 	} else {
 		log.Print(message)
-		go this.RtspRtpLoop()
+		go c.RtspRtpLoop()
 		return true, "ok"
 	}
 	return false, "other error"
@@ -251,9 +253,9 @@ func (this *RtspClient) Client(rtsp_url string) (bool, string) {
       exactly one header extension, with a format defined in Section
       5.3.1.
 */
-func (this *RtspClient) RtspRtpLoop() {
+func (c *Client) RtspRtpLoop() {
 	defer func() {
-		this.Signals <- true
+		c.Signals <- true
 	}()
 	header := make([]byte, 4)
 	payload := make([]byte, 4096)
@@ -262,27 +264,27 @@ func (this *RtspClient) RtspRtpLoop() {
 	timer := time.Now()
 	for {
 		if int(time.Now().Sub(timer).Seconds()) > 50 {
-			if !this.Write("OPTIONS " + this.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + "\r\nSession: " + this.session + this.bauth + "\r\n\r\n") {
+			if !c.Write("OPTIONS " + c.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + "\r\nSession: " + c.session + c.bauth + "\r\n\r\n") {
 				return
 			}
 			timer = time.Now()
 		}
-		this.socket.SetDeadline(time.Now().Add(50 * time.Second))
+		c.socket.SetDeadline(time.Now().Add(50 * time.Second))
 		//read rtp hdr 4
-		if n, err := io.ReadFull(this.socket, header); err != nil || n != 4 {
+		if n, err := io.ReadFull(c.socket, header); err != nil || n != 4 {
 			//rtp hdr read error
 			return
 		}
 		//log.Println(header)
 		if header[0] != 36 {
-			//log.Println("desync?", this.host)
+			//log.Println("desync?", c.host)
 			for {
 				///////////////////////////skeep/////////////////////////////////////
-				if n, err := io.ReadFull(this.socket, sync_b); err != nil && n != 1 {
+				if n, err := io.ReadFull(c.socket, sync_b); err != nil && n != 1 {
 					return
 				} else if sync_b[0] == 36 {
 					header[0] = 36
-					if n, err := io.ReadFull(this.socket, header[1:]); err != nil && n == 3 {
+					if n, err := io.ReadFull(c.socket, header[1:]); err != nil && n == 3 {
 						return
 					}
 					break
@@ -291,12 +293,12 @@ func (this *RtspClient) RtspRtpLoop() {
 			/*
 				//вычитываем 256 в попытке отсять мусор обрезать RTSP
 				if string(header) == "RTSP" {
-					if n, err := io.ReadFull(this.socket, sync); err != nil && n == 256 {
+					if n, err := io.ReadFull(c.socket, sync); err != nil && n == 256 {
 						return
 					} else {
 						rtsp_rtp := []byte(strings.Split(string(sync), "\r\n\r\n")[1])
 						//отправим все что есть в буфере
-						this.SendBufer(rtsp_rtp)
+						c.SendBufer(rtsp_rtp)
 						continue
 					}
 				} else {
@@ -309,20 +311,20 @@ func (this *RtspClient) RtspRtpLoop() {
 		payloadLen := (int)(header[2])<<8 + (int)(header[3])
 		//log.Println("payloadLen", payloadLen)
 		if payloadLen > 4096 || payloadLen < 12 {
-			log.Println("desync", this.uri, payloadLen)
+			log.Println("desync", c.uri, payloadLen)
 			return
 		}
-		if n, err := io.ReadFull(this.socket, payload[:payloadLen]); err != nil || n != payloadLen {
+		if n, err := io.ReadFull(c.socket, payload[:payloadLen]); err != nil || n != payloadLen {
 			return
 		} else {
-			this.OutGoing <- append(header, payload[:n]...)
+			c.OutGoing <- append(header, payload[:n]...)
 		}
 	}
 
 }
 
 //unsafe!
-func (this *RtspClient) SendBufer(bufer []byte) {
+func (c *Client) SendBufer(bufer []byte) {
 	//Here you need to send all the packages from the send all buffer?
 	payload := make([]byte, 4096)
 	for {
@@ -331,105 +333,105 @@ func (this *RtspClient) SendBufer(bufer []byte) {
 		}
 		dataLength := (int)(bufer[2])<<8 + (int)(bufer[3])
 		if dataLength > len(bufer)+4 {
-			if n, err := io.ReadFull(this.socket, payload[:dataLength-len(bufer)+4]); err != nil {
+			if n, err := io.ReadFull(c.socket, payload[:dataLength-len(bufer)+4]); err != nil {
 				return
 			} else {
-				this.OutGoing <- append(bufer, payload[:n]...)
+				c.OutGoing <- append(bufer, payload[:n]...)
 				return
 			}
 
 		} else {
-			this.OutGoing <- bufer[:dataLength+4]
+			c.OutGoing <- bufer[:dataLength+4]
 			bufer = bufer[dataLength+4:]
 		}
 	}
 }
-func (this *RtspClient) Connect() bool {
+func (c *Client) Connect() bool {
 	d := &net.Dialer{Timeout: 3 * time.Second}
-	conn, err := d.Dial("tcp", this.host+":"+this.port)
+	conn, err := d.Dial("tcp", c.host+":"+c.port)
 	if err != nil {
 		return false
 	}
-	this.socket = conn
+	c.socket = conn
 	return true
 }
-func (this *RtspClient) Write(message string) bool {
-	this.cseq += 1
-	if _, e := this.socket.Write([]byte(message)); e != nil {
+func (c *Client) Write(message string) bool {
+	c.cseq += 1
+	if _, e := c.socket.Write([]byte(message)); e != nil {
 		return false
 	}
 	return true
 }
-func (this *RtspClient) Read() (bool, string) {
+func (c *Client) Read() (bool, string) {
 	buffer := make([]byte, 4096)
-	if nb, err := this.socket.Read(buffer); err != nil || nb <= 0 {
+	if nb, err := c.socket.Read(buffer); err != nil || nb <= 0 {
 		log.Println("socket read failed", err)
 		return false, ""
 	} else {
 		return true, string(buffer[:nb])
 	}
 }
-func (this *RtspClient) AuthBasic(phase string, message string) bool {
-	this.bauth = "\r\nAuthorization: Basic " + b64.StdEncoding.EncodeToString([]byte(this.login+":"+this.password))
-	if !this.Write(phase + " " + this.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + this.bauth + "\r\n\r\n") {
+func (c *Client) AuthBasic(phase string, message string) bool {
+	c.bauth = "\r\nAuthorization: Basic " + b64.StdEncoding.EncodeToString([]byte(c.login+":"+c.password))
+	if !c.Write(phase + " " + c.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + c.bauth + "\r\n\r\n") {
 		return false
 	}
-	if status, message := this.Read(); status && strings.Contains(message, "200") {
-		this.track = ParseMedia(message)
+	if status, message := c.Read(); status && strings.Contains(message, "200") {
+		c.track = c.ParseMedia(message)
 		return true
 	}
 	return false
 }
-func (this *RtspClient) AuthDigest(phase string, message string) bool {
+func (c *Client) AuthDigest(phase string, message string) bool {
 	nonce := ParseDirective(message, "nonce")
 	realm := ParseDirective(message, "realm")
-	hs1 := GetMD5Hash(this.login + ":" + realm + ":" + this.password)
-	hs2 := GetMD5Hash(phase + ":" + this.uri)
+	hs1 := GetMD5Hash(c.login + ":" + realm + ":" + c.password)
+	hs2 := GetMD5Hash(phase + ":" + c.uri)
 	responce := GetMD5Hash(hs1 + ":" + nonce + ":" + hs2)
-	dauth := "\r\n" + `Authorization: Digest username="` + this.login + `", realm="` + realm + `", nonce="` + nonce + `", uri="` + this.uri + `", response="` + responce + `"`
-	if !this.Write(phase + " " + this.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(this.cseq) + dauth + "\r\n\r\n") {
+	dauth := "\r\n" + `Authorization: Digest username="` + c.login + `", realm="` + realm + `", nonce="` + nonce + `", uri="` + c.uri + `", response="` + responce + `"`
+	if !c.Write(phase + " " + c.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + dauth + "\r\n\r\n") {
 		return false
 	}
-	if status, message := this.Read(); status && strings.Contains(message, "200") {
-		this.track = ParseMedia(message)
+	if status, message := c.Read(); status && strings.Contains(message, "200") {
+		c.track = c.ParseMedia(message)
 		return true
 	}
 	return false
 }
-func (this *RtspClient) AuthDigest_Only(phase string, message string) string {
+func (c *Client) AuthDigest_Only(phase string, message string) string {
 	nonce := ParseDirective(message, "nonce")
 	realm := ParseDirective(message, "realm")
-	hs1 := GetMD5Hash(this.login + ":" + realm + ":" + this.password)
-	hs2 := GetMD5Hash(phase + ":" + this.uri)
+	hs1 := GetMD5Hash(c.login + ":" + realm + ":" + c.password)
+	hs2 := GetMD5Hash(phase + ":" + c.uri)
 	responce := GetMD5Hash(hs1 + ":" + nonce + ":" + hs2)
-	dauth := "\r\n" + `Authorization: Digest username="` + this.login + `", realm="` + realm + `", nonce="` + nonce + `", uri="` + this.uri + `", response="` + responce + `"`
+	dauth := "\r\n" + `Authorization: Digest username="` + c.login + `", realm="` + realm + `", nonce="` + nonce + `", uri="` + c.uri + `", response="` + responce + `"`
 	return dauth
 }
-func (this *RtspClient) ParseUrl(rtsp_url string) bool {
+func (c *Client) ParseUrl(rtsp_url string) bool {
 
 	u, err := url.Parse(rtsp_url)
 	if err != nil {
 		return false
 	}
 	phost := strings.Split(u.Host, ":")
-	this.host = phost[0]
+	c.host = phost[0]
 	if len(phost) == 2 {
-		this.port = phost[1]
+		c.port = phost[1]
 	} else {
-		this.port = "554"
+		c.port = "554"
 	}
-	this.login = u.User.Username()
-	this.password, this.auth = u.User.Password()
+	c.login = u.User.Username()
+	c.password, c.auth = u.User.Password()
 	if u.RawQuery != "" {
-		this.uri = "rtsp://" + this.host + ":" + this.port + u.Path + "?" + string(u.RawQuery)
+		c.uri = "rtsp://" + c.host + ":" + c.port + u.Path + "?" + string(u.RawQuery)
 	} else {
-		this.uri = "rtsp://" + this.host + ":" + this.port + u.Path
+		c.uri = "rtsp://" + c.host + ":" + c.port + u.Path
 	}
 	return true
 }
-func (this *RtspClient) Close() {
-	if this.socket != nil {
-		this.socket.Close()
+func (c *Client) Close() {
+	if c.socket != nil {
+		c.socket.Close()
 	}
 }
 func ParseDirective(header, name string) string {
@@ -455,53 +457,54 @@ func ParseSession(header string) string {
 	}
 	return ""
 }
-func ParseMedia(header string) []string {
-	letters := []string{}
-	mparsed := strings.Split(header, "\r\n")
-	paste := ""
 
-	// if true {
-	// 	log.Println("headers", header)
-	// }
+// func ParseMedia(header string) []string {
+// 	letters := []string{}
+// 	mparsed := strings.Split(header, "\r\n")
+// 	paste := ""
 
-	for _, element := range mparsed {
-		if strings.Contains(element, "a=control:") && !strings.Contains(element, "*") {
-			paste = element[10:]
-			if strings.Contains(element, "/") {
-				striped := strings.Split(element, "/")
-				paste = striped[len(striped)-1]
-			}
-			letters = append(letters, paste)
-		}
+// 	// if true {
+// 	// 	log.Println("headers", header)
+// 	// }
 
-		dimensionsPrefix := "a=x-dimensions:"
-		if strings.HasPrefix(element, dimensionsPrefix) {
-			dims := []int{}
-			for _, s := range strings.Split(element[len(dimensionsPrefix):], ",") {
-				v := 0
-				fmt.Sscanf(s, "%d", &v)
-				if v <= 0 {
-					break
-				}
-				dims = append(dims, v)
-			}
-			if len(dims) == 2 {
-				VideoWidth = dims[0]
-				VideoHeight = dims[1]
-			}
-		}
-		if strings.Contains(element, "sprop-parameter-sets") {
-			group := spropReg.FindAllStringSubmatch(element, -1)
-			log.Println(group[1])
-		}
-	}
-	return letters
-}
+// 	for _, element := range mparsed {
+// 		if strings.Contains(element, "a=control:") && !strings.Contains(element, "*") {
+// 			paste = element[10:]
+// 			if strings.Contains(element, "/") {
+// 				striped := strings.Split(element, "/")
+// 				paste = striped[len(striped)-1]
+// 			}
+// 			letters = append(letters, paste)
+// 		}
+
+// 		dimensionsPrefix := "a=x-dimensions:"
+// 		if strings.HasPrefix(element, dimensionsPrefix) {
+// 			dims := []int{}
+// 			for _, s := range strings.Split(element[len(dimensionsPrefix):], ",") {
+// 				v := 0
+// 				fmt.Sscanf(s, "%d", &v)
+// 				if v <= 0 {
+// 					break
+// 				}
+// 				dims = append(dims, v)
+// 			}
+// 			if len(dims) == 2 {
+// 				VideoWidth = dims[0]
+// 				VideoHeight = dims[1]
+// 			}
+// 		}
+// 		if strings.Contains(element, "sprop-parameter-sets") {
+// 			group := spropReg.FindAllStringSubmatch(element, -1)
+// 			log.Println(group[1])
+// 		}
+// 	}
+// 	return letters
+// }
 func GetMD5Hash(text string) string {
 	hash := md5.Sum([]byte(text))
 	return hex.EncodeToString(hash[:])
 }
-func (this *RtspClient) ParseMedia(header string) []string {
+func (c *Client) ParseMedia(header string) []string {
 	letters := []string{}
 	log.Println(header)
 	mparsed := strings.Split(header, "\r\n")
@@ -528,17 +531,17 @@ func (this *RtspClient) ParseMedia(header string) []string {
 				dims = append(dims, v)
 			}
 			if len(dims) == 2 {
-				this.videow = dims[0]
-				this.videoh = dims[1]
+				c.videow = dims[0]
+				c.videoh = dims[1]
 			}
 		}
 		group := spropReg.FindAllStringSubmatch(element, -1)
 		if len(group) > 0 {
 			group := strings.Split(group[0][1], ",")
-			this.SPS, _ = b64.StdEncoding.DecodeString(group[0])
-			this.PPS, _ = b64.StdEncoding.DecodeString(group[1])
+			c.SPS, _ = b64.StdEncoding.DecodeString(group[0])
+			c.PPS, _ = b64.StdEncoding.DecodeString(group[1])
 		} else if group = configReg.FindAllStringSubmatch(element, -1); len(group) > 0 {
-			this.AudioSpecificConfig, _ = hex.DecodeString(group[0][1])
+			c.AudioSpecificConfig, _ = hex.DecodeString(group[0][1])
 		}
 	}
 	return letters

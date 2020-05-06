@@ -69,7 +69,7 @@ func runPlugin() {
 
 type RTSP struct {
 	engine.InputStream
-	*RtspClient
+	*Client
 	RTSPInfo
 }
 type RTSPInfo struct {
@@ -221,12 +221,14 @@ func (rtsp *RTSP) run() {
 		}
 	}
 }
+
+//Publish a rtsp stream
 func (rtsp *RTSP) Publish(streamPath string, rtspUrl string) (result bool) {
 	if result = rtsp.InputStream.Publish(streamPath, rtsp); result {
 		rtsp.RTSPInfo.RoomInfo = &rtsp.Room.RoomInfo
-		rtsp.RtspClient = RtspClientNew(config.BufferLength)
-		rtsp.RTSPInfo.Header = &rtsp.RtspClient.Header
-		if status, message := rtsp.RtspClient.Client(rtspUrl); !status {
+		rtsp.Client = RtspClientNew(config.BufferLength)
+		rtsp.RTSPInfo.Header = &rtsp.Client.Header
+		if status, message := rtsp.Client.Client(rtspUrl); !status {
 			log.Println(message)
 			return false
 		}
