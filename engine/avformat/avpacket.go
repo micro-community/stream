@@ -2,16 +2,9 @@ package avformat
 
 import (
 	"sync"
-
-	"github.com/micro-community/x-streaming/engine/pool"
 )
 
 var (
-	AVPacketPool = &sync.Pool{
-		New: func() interface{} {
-			return new(AVPacket)
-		},
-	}
 	SendPacketPool = &sync.Pool{
 		New: func() interface{} {
 			return new(SendPacket)
@@ -21,24 +14,18 @@ var (
 
 // Video or Audio
 type AVPacket struct {
-	Timestamp     uint32
-	Type          byte //8 audio,9 video
-	IsAACSequence bool
-	IsADTS        bool
-	// Video
-	VideoFrameType byte //4bit
-	IsAVCSequence  bool
-	Payload        []byte
-	RefCount       int //Payload的引用次数
+	Timestamp  uint32
+	Type       byte //8 audio,9 video
+	IsSequence bool //序列帧
+	IsKeyFrame bool //是否为关键帧
+	Payload    []byte
+	Number     int //编号，audio和video独立编号
 }
 
-func (av *AVPacket) IsKeyFrame() bool {
-	return av.VideoFrameType == 1 || av.VideoFrameType == 4
-}
 func (av *AVPacket) ADTS2ASC() (tagPacket *AVPacket) {
 	tagPacket = NewAVPacket(FLV_TAG_TYPE_AUDIO)
 	tagPacket.Payload = ADTSToAudioSpecificConfig(av.Payload)
-	tagPacket.IsAACSequence = true
+	tagPacket.IsSequence = true
 	ADTSLength := 7 + ((1 - int(av.Payload[1]&1)) << 1)
 	if len(av.Payload) > ADTSLength {
 		av.Payload[0] = 0xAF
@@ -48,41 +35,31 @@ func (av *AVPacket) ADTS2ASC() (tagPacket *AVPacket) {
 	}
 	return
 }
-func (av *AVPacket) Recycle() {
-	if av.RefCount == 0 {
-		return
-	} else if av.RefCount == 1 {
-		av.RefCount = 0
-		pool.RecycleSlice(av.Payload)
-		AVPacketPool.Put(av)
-	} else {
-		av.RefCount--
-	}
-}
+
 func NewAVPacket(avType byte) (p *AVPacket) {
-	p = AVPacketPool.Get().(*AVPacket)
+	p = new(AVPacket)
 	p.Type = avType
-	p.IsAVCSequence = false
-	p.VideoFrameType = 0
-	p.Timestamp = 0
-	p.IsAACSequence = false
-	p.IsADTS = false
 	return
+}
+func (av AVPacket) Clone() *AVPacket {
+	return &av
+}
+func (av *AVPacket) VideoFrameType() byte {
+	return av.Payload[0] >> 4
 }
 
 type SendPacket struct {
+	*AVPacket
 	Timestamp uint32
-	Packet    *AVPacket
 }
 
 func (packet *SendPacket) Recycle() {
-	packet.Packet.Recycle()
 	SendPacketPool.Put(packet)
 }
 
 func NewSendPacket(p *AVPacket, timestamp uint32) (result *SendPacket) {
 	result = SendPacketPool.Get().(*SendPacket)
-	result.Packet = p
+	result.AVPacket = p
 	result.Timestamp = timestamp
 	return
 }

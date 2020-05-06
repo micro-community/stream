@@ -76,8 +76,8 @@ func WriteFLVTag(w io.Writer, tag *SendPacket) (err error) {
 	defer pool.RecycleSlice(head)
 	tail := pool.GetSlice(4)
 	defer pool.RecycleSlice(tail)
-	head[0] = tag.Packet.Type
-	dataSize := uint32(len(tag.Packet.Payload))
+	head[0] = tag.Type
+	dataSize := uint32(len(tag.Payload))
 	util.BigEndian.PutUint32(tail, dataSize+11)
 	util.BigEndian.PutUint24(head[1:], dataSize)
 	util.BigEndian.PutUint24(head[4:], tag.Timestamp)
@@ -86,7 +86,7 @@ func WriteFLVTag(w io.Writer, tag *SendPacket) (err error) {
 		return
 	}
 	// Tag Data
-	if _, err = w.Write(tag.Packet.Payload); err != nil {
+	if _, err = w.Write(tag.Payload); err != nil {
 		return
 	}
 	if _, err = w.Write(tail); err != nil { // PreviousTagSizeN(4)
@@ -94,19 +94,17 @@ func WriteFLVTag(w io.Writer, tag *SendPacket) (err error) {
 	}
 	return
 }
-func ReadFLVTag(r io.Reader) (tag *AVPacket, err error) {
+func ReadFLVTag(r io.Reader) (t byte, timestamp uint32, payload []byte, err error) {
 	head := pool.GetSlice(11)
 	defer pool.RecycleSlice(head)
 	if _, err = io.ReadFull(r, head); err != nil {
 		return
 	}
-	tag = NewAVPacket(head[0])
+	t = head[0]
 	dataSize := util.BigEndian.Uint24(head[1:])
-	tag.Timestamp = util.BigEndian.Uint24(head[4:])
-	body := pool.GetSlice(int(dataSize))
-	defer pool.RecycleSlice(body)
-	if _, err = io.ReadFull(r, body); err == nil {
-		tag.Payload = body
+	timestamp = util.BigEndian.Uint24(head[4:])
+	payload = make([]byte, int(dataSize))
+	if _, err = io.ReadFull(r, payload); err == nil {
 		t := pool.GetSlice(4)
 		_, err = io.ReadFull(r, t)
 		pool.RecycleSlice(t)
