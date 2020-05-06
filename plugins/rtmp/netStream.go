@@ -8,14 +8,16 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/micro-community/x-streaming/engine"
+	"github.com/micro-community/x-streaming/engine"
 	"github.com/micro-community/x-streaming/engine/avformat"
 )
 
+//RTMP Protocol
 type RTMP struct {
-	Publisher
+	engine.Publisher
 }
 
+//ListenRtmp list rtmp
 func ListenRtmp(addr string) error {
 	defer log.Println("rtmp server start!")
 	// defer fmt.Println("server start!")
@@ -121,7 +123,7 @@ func processRtmp(conn net.Conn) {
 					var lastAudioTime uint32 = 0
 					var lastVideoTime uint32 = 0
 					// followAVCSequence := false
-					stream := &Subscriber{OnData: func(packet *avformat.SendPacket) (err error) {
+					stream := &engine.Subscriber{OnData: func(packet *avformat.SendPacket) (err error) {
 						switch true {
 						// case packet.IsADTS:
 						// 	tagPacket := avformat.NewAVPacket(RTMP_MSG_AUDIO)

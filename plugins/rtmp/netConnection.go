@@ -19,7 +19,7 @@ const (
 	SEND_SET_PEER_BANDWIDTH_MESSAGE = "Send Set Peer Bandwidth Message"
 
 	SEND_STREAM_BEGIN_MESSAGE       = "Send Stream Begin Message"
-	SEND_SET_BUFFER_LENGTH_MESSAGE  = "Send Set Buffer Lengh Message"
+	SEND_SET_BUFFER_LENGTH_MESSAGE  = "Send Set Buffer Length Message"
 	SEND_STREAM_IS_RECORDED_MESSAGE = "Send Stream Is Recorded Message"
 
 	SEND_PING_REQUEST_MESSAGE  = "Send Ping Request Message"
@@ -37,7 +37,7 @@ const (
 	SEND_PUBLISH_RESPONSE_MESSAGE = "Send Publish Response Message"
 	SEND_PUBLISH_START_MESSAGE    = "Send Publish Start Message"
 
-	SEND_UNPUBLISH_RESPONSE_MESSAGE = "Send Unpublish Response Message"
+	SEND_UNPUBLISH_RESPONSE_MESSAGE = "Send Unpublished Response Message"
 
 	SEND_AUDIO_MESSAGE      = "Send Audio Message"
 	SEND_FULL_AUDIO_MESSAGE = "Send Full Audio Message"
