@@ -32,7 +32,7 @@ func GetStream(streamPath string) (result *Stream) {
 	item, loaded := streamCollection.LoadOrStore(streamPath, &Stream{
 		Subscribers:  make(map[string]*Subscriber),
 		Control:      make(chan interface{}),
-		AVRing:       NewRing(config.RingSize),
+		AVRing:       NewRing(Config.RingSize),
 		WaitingMutex: new(sync.RWMutex),
 		StreamInfo: StreamInfo{
 			StreamPath:     streamPath,
@@ -107,7 +107,7 @@ type ChangeStreamCmd struct {
 }
 
 func (r *Stream) onClosed() {
-	Print(aurora.Yellow("Stream destoryed :"), aurora.BrightCyan(r.StreamPath))
+	Print(aurora.Yellow("Stream destroyed :"), aurora.BrightCyan(r.StreamPath))
 	streamCollection.Delete(r.StreamPath)
 	for i, val := range Summary.Streams {
 		if val == &r.StreamInfo {
@@ -123,7 +123,7 @@ func (r *Stream) Subscribe(s *Subscriber) {
 	s.Stream = r
 	if r.Err() == nil {
 		s.SubscribeTime = time.Now()
-		Print(Sprintf(aurora.Yellow("subscribe :%s %s,to Stream %s"), Blue(s.Type), Cyan(s.ID), BrightCyan(r.StreamPath)))
+		Print(aurora.Sprintf(aurora.Yellow("subscribe :%s %s,to Stream %s"), aurora.Blue(s.Type), aurora.Cyan(s.ID), aurora.BrightCyan(r.StreamPath)))
 		s.Context, s.Cancel = context.WithCancel(r)
 		s.Control <- &SubscribeCmd{s}
 	}
@@ -156,7 +156,7 @@ func (r *Stream) Run() {
 						}
 					}
 					OnUnSubscribeHooks.Trigger(v.Subscriber)
-					Print(Sprintf(aurora.Yellow("%s subscriber %s removed remains:%d"), aurora.BrightCyan(r.StreamPath), aurora.Cyan(v.ID), aurora.Blue(len(r.SubscriberInfo))))
+					Print(aurora.Sprintf(aurora.Yellow("%s subscriber %s removed remains:%d"), aurora.BrightCyan(r.StreamPath), aurora.Cyan(v.ID), aurora.Blue(len(r.SubscriberInfo))))
 					if len(r.SubscriberInfo) == 0 && r.Publisher == nil {
 						r.Cancel()
 					}
@@ -166,7 +166,7 @@ func (r *Stream) Run() {
 				if _, ok := r.Subscribers[v.ID]; !ok {
 					r.Subscribers[v.ID] = v.Subscriber
 					r.SubscriberInfo = append(r.SubscriberInfo, &v.SubscriberInfo)
-					Print(Sprintf(aurora.Yellow("%s subscriber %s added remains:%d"), aurora.BrightCyan(r.StreamPath), aurora.Cyan(v.ID), aurora.Blue(len(r.SubscriberInfo))))
+					Print(aurora.Sprintf(aurora.Yellow("%s subscriber %s added remains:%d"), aurora.BrightCyan(r.StreamPath), aurora.Cyan(v.ID), aurora.Blue(len(r.SubscriberInfo))))
 					OnSubscribeHooks.Trigger(v.Subscriber)
 				}
 			case *ChangeStreamCmd:

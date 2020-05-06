@@ -45,7 +45,7 @@ func (s *Subscriber) Close() {
 
 //Subscribe 开始订阅
 func (s *Subscriber) Subscribe(streamPath string) (err error) {
-	if !config.EnableWaitStream {
+	if !Config.EnableWaitStream {
 		if _, ok := streamCollection.Load(streamPath); !ok {
 			return errors.New(fmt.Sprintf("Stream not found:%s", streamPath))
 		}

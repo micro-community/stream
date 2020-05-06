@@ -19,6 +19,7 @@
         "arpc",
         "avcsent",
         "avformat",
+        "AVRing",
         "bbolt",
         "bname",
         "boltdb",
