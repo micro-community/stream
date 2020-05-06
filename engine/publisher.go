@@ -1,38 +1,36 @@
 package engine
 
 import (
-	"log"
-	"reflect"
 	"time"
 )
 
-type Publisher interface {
-	OnClosed()
+// Publisher 发布者实体定义
+type Publisher struct {
+	*Stream
 }
 
-type InputStream struct {
-	*Room
-}
-
-func (p *InputStream) Close() {
+// Close 关闭发布者
+func (p *Publisher) Close() {
 	if p.Running() {
 		p.Cancel()
 	}
 }
-func (p *InputStream) Running() bool {
-	return p.Room != nil && p.Err() == nil
+
+// Running 发布者是否正在发布
+func (p *Publisher) Running() bool {
+	return p.Stream != nil && p.Err() == nil
 }
-func (p *InputStream) OnClosed() {
-}
-func (p *InputStream) Publish(streamPath string, publisher Publisher) bool {
-	p.Room = AllRoom.Get(streamPath)
+
+// Publish 发布者进行发布操作
+func (p *Publisher) Publish(streamPath string) bool {
+	p.Stream = GetStream(streamPath)
+	//检查是否已存在发布者
 	if p.Publisher != nil {
 		return false
 	}
-	p.Publisher = publisher
-	p.Type = reflect.ValueOf(publisher).Elem().Type().Name()
-	log.Printf("publish set :%s", p.Type)
+	p.Publisher = p
 	p.StartTime = time.Now()
-	OnPublishHooks.Trigger(p.Room)
+	//触发钩子
+	OnPublishHooks.Trigger(p.Stream)
 	return true
 }
