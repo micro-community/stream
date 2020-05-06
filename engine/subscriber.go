@@ -6,131 +6,105 @@ import (
 	"time"
 
 	"github.com/micro-community/x-streaming/engine/avformat"
+	"github.com/pkg/errors"
 )
 
-type Subscriber interface {
-	Send(*avformat.SendPacket) error
-}
-
+// SubscriberInfo 订阅者可序列化信息，用于控制台输出
 type SubscriberInfo struct {
 	ID            string
 	TotalDrop     int //总丢帧
 	TotalPacket   int
 	Type          string
 	BufferLength  int
+	Delay         uint32
 	SubscribeTime time.Time
 }
-type OutputStream struct {
+
+// Subscriber 订阅者实体定义
+type Subscriber struct {
 	context.Context
-	*Room
+	*Stream
 	SubscriberInfo
-	SendHandler      func(*avformat.SendPacket) error
-	Cancel           context.CancelFunc
-	Sign             string
-	VTSent           bool
-	ATSent           bool
-	VSentTime        uint32
-	ASentTime        uint32
-	packetQueue      chan *avformat.SendPacket
-	dropCount        int
-	OffsetTime       uint32
-	firstScreenIndex int
+	OnData     func(*avformat.SendPacket) error
+	Cancel     context.CancelFunc
+	Sign       string
+	OffsetTime uint32
 }
 
-func (s *OutputStream) IsClosed() bool {
+// IsClosed 检查订阅者是否已经关闭
+func (s *Subscriber) IsClosed() bool {
 	return s.Context != nil && s.Err() != nil
 }
 
-func (s *OutputStream) Close() {
+// Close 关闭订阅者
+func (s *Subscriber) Close() {
 	if s.Cancel != nil {
 		s.Cancel()
 	}
 }
-func (s *OutputStream) Play(streamPath string) (err error) {
-	AllRoom.Get(streamPath).Subscribe(s)
+
+//Subscribe 开始订阅
+func (s *Subscriber) Subscribe(streamPath string) (err error) {
+	if !config.EnableWaitStream {
+		if _, ok := streamCollection.Load(streamPath); !ok {
+			return errors.New(fmt.Sprintf("Stream not found:%s", streamPath))
+		}
+	}
+	GetStream(streamPath).Subscribe(s)
 	defer s.UnSubscribe(s)
+	//加锁解锁的目的是等待发布者首屏数据，如果发布者尚为发布，则会等待，否则就会往下执行
+	s.WaitingMutex.RLock()
+	s.WaitingMutex.RUnlock()
+	sendPacket := avformat.NewSendPacket(s.VideoTag, 0)
+	defer sendPacket.Recycle()
+	s.OnData(sendPacket)
+	packet := s.FirstScreen.Clone()
+	startTime := packet.Timestamp
+	packet.RLock()
+	sendPacket.AVPacket = &packet.AVPacket
+	s.OnData(sendPacket)
+	packet.NextR()
+	atsent := false
+	dropping := false
+	droped := 0
 	for {
 		select {
 		case <-s.Done():
 			return s.Err()
-		case p := <-s.packetQueue:
-			if err = s.SendHandler(p); err != nil {
-				s.Cancel() //此处为了使得IsClosed 返回true
-				return
+		default:
+			s.TotalPacket++
+			packet.RLock()
+			if !dropping {
+				if packet.Type == avformat.FLV_TAG_TYPE_AUDIO && !atsent {
+					sendPacket.AVPacket = s.AudioTag
+					sendPacket.Timestamp = 0
+					s.OnData(sendPacket)
+					atsent = true
+				}
+				sendPacket.AVPacket = &packet.AVPacket
+				sendPacket.Timestamp = packet.Timestamp - startTime
+				s.OnData(sendPacket)
+				if s.checkDrop(packet) {
+					dropping = true
+					droped = 0
+				}
+				packet.NextR()
+			} else if packet.IsKeyFrame {
+				//遇到关键帧则退出丢帧
+				dropping = false
+				//fmt.Println("drop package ", droped)
+				s.TotalDrop += droped
+				packet.RUnlock()
+			} else {
+				droped++
+				packet.NextR()
 			}
-			p.Recycle()
 		}
 	}
 }
-func (s *OutputStream) sendPacket(packet *avformat.AVPacket, timestamp uint32) {
-	if !packet.IsAVCSequence && timestamp == 0 {
-		timestamp = 1 //防止为0
-	}
-	s.TotalPacket++
-	s.BufferLength = len(s.packetQueue)
-	if s.dropCount > 0 {
-		if packet.IsKeyFrame() {
-			fmt.Printf("%s drop packet:%d\n", s.ID, s.dropCount)
-			s.dropCount = 0 //退出丢包
-		} else {
-			s.dropCount++
-			s.TotalDrop++
-			return
-		}
-	}
-	if s.BufferLength == cap(s.packetQueue) {
-		s.dropCount++
-		s.TotalDrop++
-		packet.Recycle()
-	} else if !s.IsClosed() {
-		s.packetQueue <- avformat.NewSendPacket(packet, timestamp)
-	}
-}
-
-func (s *OutputStream) sendVideo(video *avformat.AVPacket) error {
-	isKF := video.IsKeyFrame()
-	if s.VTSent {
-		if s.FirstScreen == nil || s.firstScreenIndex == -1 {
-			s.sendPacket(video, video.Timestamp-s.VSentTime+s.OffsetTime)
-		} else if !isKF && s.firstScreenIndex < len(s.FirstScreen) {
-			firstScreen := s.FirstScreen[s.firstScreenIndex]
-			firstScreen.RefCount++
-			s.VSentTime = firstScreen.Timestamp - s.FirstScreen[0].Timestamp
-			s.sendPacket(firstScreen, s.VSentTime)
-			video.Recycle() //回收当前数据
-			s.firstScreenIndex++
-		} else {
-			s.firstScreenIndex = -1 //收到关键帧或者首屏缓冲已播完后退出首屏渲染模式
-			s.OffsetTime += s.VSentTime
-			s.VSentTime = video.Timestamp
-			s.sendPacket(video, s.OffsetTime)
-		}
-		return nil
-	}
-	//非首屏渲染模式跳过开头的非关键帧
-	if !isKF {
-		if s.FirstScreen == nil {
-			return nil
-		}
-	} else if s.FirstScreen != nil {
-		s.firstScreenIndex = -1 //跳过首屏渲染
-	}
-	s.VTSent = true
-	s.sendPacket(s.VideoTag, 0)
-	s.VSentTime = video.Timestamp
-	return s.sendVideo(video)
-}
-func (s *OutputStream) sendAudio(audio *avformat.AVPacket) error {
-	if s.ATSent {
-		if s.FirstScreen != nil && s.firstScreenIndex == -1 {
-			audio.Recycle()
-			return nil
-		}
-		s.sendPacket(audio, audio.Timestamp-s.ASentTime)
-		return nil
-	}
-	s.ATSent = true
-	s.sendPacket(s.AudioTag, 0)
-	s.ASentTime = audio.Timestamp
-	return s.sendAudio(audio)
+func (s *Subscriber) checkDrop(packet *Ring) bool {
+	pIndex := s.AVRing.Index
+	s.BufferLength = pIndex - packet.Index
+	s.Delay = s.AVRing.Timestamp - packet.Timestamp
+	return s.BufferLength > s.AVRing.Size/2
 }
