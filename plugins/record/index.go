@@ -5,17 +5,22 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 
-	. "github.com/micro-community/x-streaming/engine"
+	"github.com/micro-community/x-streaming/engine"
+
+	"github.com/micro-community/x-streaming/engine/util"
 )
 
 var config = struct {
-	Path string
+	Path        string
+	AutoPublish bool
 }{}
 var recordings = sync.Map{}
 
+//FlvFileInfo for flv record
 type FlvFileInfo struct {
 	Path     string
 	Size     int64
@@ -23,19 +28,17 @@ type FlvFileInfo struct {
 }
 
 func init() {
-	InstallPlugin(&PluginConfig{
-		Name:   "RecordFlv",
-		Type:   PLUGIN_SUBSCRIBER,
+	engine.InstallPlugin(&engine.PluginConfig{
+		Name:   "Record",
+		Type:   engine.PLUGIN_SUBSCRIBER,
 		Config: &config,
 		Run:    run,
 	})
 }
 func run() {
-	OnSubscribeHooks.AddHook(onSubscribe)
-	if !strings.HasSuffix(config.Path, "/") {
-		config.Path = config.Path + "/"
-	}
-	http.HandleFunc("/api/record/flv/list", func(writer http.ResponseWriter, r *http.Request) {
+	engine.OnSubscribeHooks.AddHook(onSubscribe)
+	os.MkdirAll(config.Path, 0666)
+	http.HandleFunc("/record/flv/list", func(writer http.ResponseWriter, r *http.Request) {
 		if files, err := tree(config.Path, 0); err == nil {
 			var bytes []byte
 			if bytes, err = json.Marshal(files); err == nil {
@@ -47,9 +50,9 @@ func run() {
 			writer.Write([]byte("{\"err\":\"" + err.Error() + "\"}"))
 		}
 	})
-	http.HandleFunc("/api/record/flv", func(writer http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/record/flv", func(writer http.ResponseWriter, r *http.Request) {
 		if streamPath := r.URL.Query().Get("streamPath"); streamPath != "" {
-			if err := SaveFlv(streamPath, r.URL.Query().Get("append") != ""); err != nil {
+			if err := SaveFlv(streamPath, r.URL.Query().Get("append") == "true"); err != nil {
 				writer.Write([]byte(err.Error()))
 			} else {
 				writer.Write([]byte("success"))
@@ -59,12 +62,12 @@ func run() {
 		}
 	})
 
-	http.HandleFunc("/api/record/flv/stop", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/record/flv/stop", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		if streamPath := r.URL.Query().Get("streamPath"); streamPath != "" {
-			filePath := config.Path + streamPath + ".flv"
+			filePath := filepath.Join(config.Path, streamPath+".flv")
 			if stream, ok := recordings.Load(filePath); ok {
-				output := stream.(*Subscriber)
+				output := stream.(*engine.Subscriber)
 				output.Close()
 				w.Write([]byte("success"))
 			} else {
@@ -74,7 +77,7 @@ func run() {
 			w.Write([]byte("no such stream"))
 		}
 	})
-	http.HandleFunc("/api/record/flv/play", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/record/flv/play", func(w http.ResponseWriter, r *http.Request) {
 		if streamPath := r.URL.Query().Get("streamPath"); streamPath != "" {
 			if err := PublishFlvFile(streamPath); err != nil {
 				w.Write([]byte(err.Error()))
@@ -85,10 +88,10 @@ func run() {
 			w.Write([]byte("no streamPath"))
 		}
 	})
-	http.HandleFunc("/api/record/flv/delete", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/record/flv/delete", func(w http.ResponseWriter, r *http.Request) {
 		if streamPath := r.URL.Query().Get("streamPath"); streamPath != "" {
-			filePath := config.Path + streamPath + ".flv"
-			if PathExists(filePath) {
+			filePath := filepath.Join(config.Path, streamPath+".flv")
+			if util.Exist(filePath) {
 				if err := os.Remove(filePath); err != nil {
 					w.Write([]byte(err.Error()))
 				} else {
@@ -102,22 +105,13 @@ func run() {
 		}
 	})
 }
-func onSubscribe(s *Subscriber) {
-	filePath := config.Path + s.StreamPath + ".flv"
-	if s.Publisher == nil && PathExists(filePath) {
-		PublishFlvFile(s.StreamPath)
+func onSubscribe(s *engine.Subscriber) {
+	filePath := filepath.Join(config.Path, s.StreamPath+".flv")
+	if s.Publisher == nil && util.Exist(filePath) {
+		go PublishFlvFile(s.StreamPath)
 	}
 }
-func PathExists(path string) bool {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true
-	}
-	if os.IsNotExist(err) {
-		return false
-	}
-	return false
-}
+
 func tree(dstPath string, level int) (files []*FlvFileInfo, err error) {
 	var dstF *os.File
 	dstF, err = os.Open(dstPath)
@@ -131,13 +125,14 @@ func tree(dstPath string, level int) (files []*FlvFileInfo, err error) {
 	}
 	if !fileInfo.IsDir() { //如果dstF是文件
 		if path.Ext(fileInfo.Name()) == ".flv" {
+			p := strings.TrimPrefix(dstPath, config.Path)
+			p = strings.ReplaceAll(p, "\\", "/")
 			files = append(files, &FlvFileInfo{
-				Path:     strings.TrimPrefix(strings.TrimPrefix(dstPath, config.Path), "/"),
+				Path:     strings.TrimPrefix(p, "/"),
 				Size:     fileInfo.Size(),
 				Duration: getDuration(dstF),
 			})
 		}
-		return
 	} else { //如果dstF是文件夹
 		var dir []os.FileInfo
 		dir, err = dstF.Readdir(0) //获取文件夹下各个文件或文件夹的fileInfo
@@ -146,7 +141,7 @@ func tree(dstPath string, level int) (files []*FlvFileInfo, err error) {
 		}
 		for _, fileInfo = range dir {
 			var _files []*FlvFileInfo
-			_files, err = tree(dstPath+"/"+fileInfo.Name(), level+1)
+			_files, err = tree(filepath.Join(dstPath, fileInfo.Name()), level+1)
 			if err != nil {
 				return
 			}
@@ -155,4 +150,5 @@ func tree(dstPath string, level int) (files []*FlvFileInfo, err error) {
 		return
 	}
 
+	return
 }

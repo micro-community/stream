@@ -4,38 +4,42 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 
-	. "github.com/micro-community/x-streaming/engine"
+	"github.com/micro-community/x-streaming/engine"
 	"github.com/micro-community/x-streaming/engine/avformat"
 )
 
+//FlvFile for flv container
 type FlvFile struct {
-	InputStream
+	engine.Publisher
 }
 
+//PublishFlvFile pub flv file streaming
 func PublishFlvFile(streamPath string) error {
-	if file, err := os.Open(config.Path + streamPath + ".flv"); err == nil {
+	if file, err := os.Open(filepath.Join(config.Path, streamPath+".flv")); err == nil {
 		stream := FlvFile{}
-		if stream.Publish(streamPath, &stream) {
+		if stream.Publish(streamPath) {
+			stream.Type = "FlvFile"
 			defer stream.Close()
 			stream.UseTimestamp = true
 			file.Seek(int64(len(avformat.FLVHeader)), io.SeekStart)
 			var lastTime uint32
 			for {
-				if tag, err := avformat.ReadFLVTag(file); err == nil {
-					switch tag.Type {
+				if t, timestamp, payload, err := avformat.ReadFLVTag(file); err == nil {
+					switch t {
 					case avformat.FLV_TAG_TYPE_AUDIO:
-						stream.PushAudio(tag)
+						stream.PushAudio(timestamp, payload)
 					case avformat.FLV_TAG_TYPE_VIDEO:
-						if tag.Timestamp != 0 {
+						if timestamp != 0 {
 							if lastTime == 0 {
-								lastTime = tag.Timestamp
+								lastTime = timestamp
 							}
 						}
-						stream.PushVideo(tag)
-						time.Sleep(time.Duration(tag.Timestamp-lastTime) * time.Millisecond)
-						lastTime = tag.Timestamp
+						stream.PushVideo(timestamp, payload)
+						time.Sleep(time.Duration(timestamp-lastTime) * time.Millisecond)
+						lastTime = timestamp
 					}
 				} else {
 					return err

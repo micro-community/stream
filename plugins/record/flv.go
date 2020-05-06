@@ -4,8 +4,9 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 
-	. "github.com/micro-community/x-streaming/engine"
+	"github.com/micro-community/x-streaming/engine"
 	"github.com/micro-community/x-streaming/engine/avformat"
 	"github.com/micro-community/x-streaming/engine/util"
 )
@@ -17,16 +18,17 @@ func getDuration(file *os.File) uint32 {
 		if tagSize, err = util.ReadByteToUint32(file, true); err == nil {
 			_, err = file.Seek(-int64(tagSize)-4, io.SeekEnd)
 			if err == nil {
-				var tag *avformat.AVPacket
-				tag, err = avformat.ReadFLVTag(file)
+				_, timestamp, _, err := avformat.ReadFLVTag(file)
 				if err == nil {
-					return tag.Timestamp
+					return timestamp
 				}
 			}
 		}
 	}
 	return 0
 }
+
+//SaveFlv to FS
 func SaveFlv(streamPath string, append bool) error {
 	flag := os.O_CREATE
 	if append {
@@ -34,13 +36,13 @@ func SaveFlv(streamPath string, append bool) error {
 	} else {
 		flag = flag | os.O_TRUNC | os.O_WRONLY
 	}
-	filePath := config.Path + streamPath + ".flv"
+	filePath := filepath.Join(config.Path, streamPath+".flv")
 	os.MkdirAll(path.Dir(filePath), 0666)
 	file, err := os.OpenFile(filePath, flag, 0666)
 	if err != nil {
 		return err
 	}
-	p := Subscriber{SendHandler: func(packet *avformat.SendPacket) error {
+	p := engine.Subscriber{OnData: func(packet *avformat.SendPacket) error {
 		return avformat.WriteFLVTag(file, packet)
 	}}
 	p.ID = filePath
@@ -54,7 +56,7 @@ func SaveFlv(streamPath string, append bool) error {
 	if err == nil {
 		recordings.Store(filePath, &p)
 		go func() {
-			p.Play(streamPath)
+			p.Subscribe(streamPath)
 			file.Close()
 		}()
 	} else {
