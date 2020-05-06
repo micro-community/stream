@@ -9,7 +9,6 @@ import (
 	"reflect"
 
 	"github.com/micro-community/x-streaming/engine/pool"
-
 	"github.com/micro-community/x-streaming/engine/util"
 )
 

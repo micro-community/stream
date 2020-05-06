@@ -79,6 +79,9 @@ var (
 func newChunkHeader(messageType byte) *ChunkHeader {
 	head := rtmpHeaderPool.Get().(*ChunkHeader)
 	head.ChunkStreamID = RTMP_CSID_CONTROL
+	if messageType == RTMP_MSG_AMF0_COMMAND {
+		head.ChunkStreamID = RTMP_CSID_COMMAND
+	}
 	head.Timestamp = 0
 	head.MessageTypeID = messageType
 	head.MessageStreamID = 0
@@ -439,7 +442,6 @@ func (msg *CreateStreamMessage) Encode() []byte {
 /*
 func (msg *CreateStreamMessage) Encode3() {
 	msg.Encode0()
-
 	buf := new(bytes.Buffer)
 	buf.WriteByte(0)
 	buf.Write(msg.RtmpBody)

@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 
+	"github.com/micro-community/x-streaming/engine"
 	"github.com/micro-community/x-streaming/engine/avformat"
 	"github.com/micro-community/x-streaming/engine/pool"
 	"github.com/micro-community/x-streaming/engine/util"
@@ -46,7 +47,7 @@ const (
 
 func newConnectResponseMessageData(objectEncoding float64) (amfobj AMFObjects) {
 	amfobj = newAMFObjects()
-	amfobj["fmsVer"] = "monibuca/1.0"
+	amfobj["fmsVer"] = "monibuca/" + engine.Version
 	amfobj["capabilities"] = 31
 	amfobj["mode"] = 1
 	amfobj["Author"] = "dexter"
@@ -168,7 +169,7 @@ func (conn *NetConnection) SendMessage(message string, args interface{}) error {
 		if args != nil {
 			return errors.New(SEND_PING_REQUEST_MESSAGE + ", The parameter is nil")
 		}
-		return conn.writeMessage(RTMP_MSG_USER_CONTROL, &UserControlMessage{EventType: RTMP_USER_PING_REQUEST})
+		return conn.writeMessage(RTMP_MSG_USER_CONTROL, &PingRequestMessage{UserControlMessage{EventType: RTMP_USER_PING_REQUEST}, 0})
 	case SEND_PING_RESPONSE_MESSAGE:
 		if args != nil {
 			return errors.New(SEND_PING_RESPONSE_MESSAGE + ", The parameter is nil")
@@ -242,12 +243,11 @@ func (conn *NetConnection) SendMessage(message string, args interface{}) error {
 		m.StreamID = streamID
 		return conn.writeMessage(RTMP_MSG_AMF0_COMMAND, m)
 	case SEND_CONNECT_RESPONSE_MESSAGE:
-		data := newConnectResponseMessageData(args.(float64))
 		//if !ok {
 		//	errors.New(SEND_CONNECT_RESPONSE_MESSAGE + ", The parameter is AMFObjects(map[string]interface{})")
 		//}
 
-		//pro := newAMFObjects()
+		pro := newAMFObjects()
 		info := newAMFObjects()
 
 		//for i, v := range data {
@@ -256,10 +256,19 @@ func (conn *NetConnection) SendMessage(message string, args interface{}) error {
 		//		pro[i] = v
 		//	}
 		//}
+
+		pro["fmsVer"] = "monibuca/" + engine.Version
+		pro["capabilities"] = 31
+		pro["mode"] = 1
+		pro["Author"] = "dexter"
+
+		info["level"] = Level_Status
+		info["code"] = NetConnection_Connect_Success
+		info["objectEncoding"] = args.(float64)
 		m := new(ResponseConnectMessage)
 		m.CommandName = Response_Result
 		m.TransactionId = 1
-		m.Properties = data
+		m.Properties = pro
 		m.Infomation = info
 		return conn.writeMessage(RTMP_MSG_AMF0_COMMAND, m)
 	case SEND_CONNECT_MESSAGE:
@@ -335,14 +344,12 @@ func (conn *NetConnection) SendMessage(message string, args interface{}) error {
 
 		return conn.sendAVMessage(video, false, true)
 	case SEND_VIDEO_MESSAGE:
-		{
-			video, ok := args.(*avformat.SendPacket)
-			if !ok {
-				errors.New(message + ", The parameter is AVPacket")
-			}
-
-			return conn.sendAVMessage(video, false, false)
+		video, ok := args.(*avformat.SendPacket)
+		if !ok {
+			errors.New(message + ", The parameter is AVPacket")
 		}
+
+		return conn.sendAVMessage(video, false, false)
 	}
 
 	return errors.New("send message no exist")
@@ -360,59 +367,38 @@ func (conn *NetConnection) sendAVMessage(av *avformat.SendPacket, isAudio bool, 
 	}
 
 	var err error
-	var mark []byte
 	var need []byte
 	var head *ChunkHeader
-
 	if isAudio {
-		head = newRtmpHeader(RTMP_CSID_AUDIO, av.Timestamp, uint32(len(av.Packet.Payload)), RTMP_MSG_AUDIO, conn.streamID, 0)
+		head = newRtmpHeader(RTMP_CSID_AUDIO, av.Timestamp, uint32(len(av.Payload)), RTMP_MSG_AUDIO, conn.streamID, 0)
 	} else {
-		head = newRtmpHeader(RTMP_CSID_VIDEO, av.Timestamp, uint32(len(av.Packet.Payload)), RTMP_MSG_VIDEO, conn.streamID, 0)
+		head = newRtmpHeader(RTMP_CSID_VIDEO, av.Timestamp, uint32(len(av.Payload)), RTMP_MSG_VIDEO, conn.streamID, 0)
 	}
 
 	// 第一次是发送关键帧,需要完整的消息头(Chunk Basic Header(1) + Chunk Message Header(11) + Extended Timestamp(4)(可能会要包括))
 	// 后面开始,就是直接发送音视频数据,那么直接发送,不需要完整的块(Chunk Basic Header(1) + Chunk Message Header(7))
 	// 当Chunk Type为0时(即Chunk12),
 	if isFirst {
-		mark, need, err = encodeChunk12(head, av.Packet.Payload, conn.writeChunkSize)
+		need, err = conn.encodeChunk12(head, av.Payload, conn.writeChunkSize)
 	} else {
-		mark, need, err = encodeChunk8(head, av.Packet.Payload, conn.writeChunkSize)
-	}
+		need, err = conn.encodeChunk8(head, av.Payload, conn.writeChunkSize)
 
+	}
 	if err != nil {
 		return err
 	}
-
-	_, err = conn.Write(mark)
-	if err != nil {
+	if err = conn.Flush(); err != nil {
 		return err
 	}
-
-	err = conn.Flush()
-	if err != nil {
-		return err
-	}
-
-	conn.writeSeqNum += uint32(len(mark))
 
 	// 如果音视频数据太大,一次发送不完,那么在这里进行分割(data + Chunk Basic Header(1))
 	for need != nil && len(need) > 0 {
-		mark, need, err = encodeChunk1(head, need, conn.writeChunkSize)
-		if err != nil {
+		if need, err = conn.encodeChunk1(head, need, conn.writeChunkSize); err != nil {
 			return err
 		}
-
-		_, err = conn.Write(mark)
-		if err != nil {
+		if err = conn.Flush(); err != nil {
 			return err
 		}
-
-		err = conn.Flush()
-		if err != nil {
-			return err
-		}
-
-		conn.writeSeqNum += uint32(len(mark))
 	}
 
 	return nil
@@ -476,6 +462,7 @@ func (conn *NetConnection) readChunk() (msg *Chunk, err error) {
 	if markRead == msgLen {
 
 		msg := chunkMsgPool.Get().(*Chunk)
+		msg.MsgData = nil
 		msg.Body = currentBody
 		msg.ChunkHeader = chunkHead.Clone()
 		GetRtmpMessage(msg)
@@ -692,41 +679,20 @@ func (conn *NetConnection) writeMessage(t byte, msg RtmpMessage) error {
 		conn.SendMessage(SEND_PING_REQUEST_MESSAGE, nil)
 	}
 
-	mark, need, err := encodeChunk12(head, body, conn.writeChunkSize)
+	need, err := conn.encodeChunk12(head, body, conn.writeChunkSize)
 	if err != nil {
 		return err
 	}
-
-	_, err = conn.Write(mark)
-	if err != nil {
+	if err = conn.Flush(); err != nil {
 		return err
 	}
-
-	err = conn.Flush()
-	if err != nil {
-		return err
-	}
-
-	conn.writeSeqNum += uint32(len(mark))
-
 	for need != nil && len(need) > 0 {
-		mark, need, err = encodeChunk1(head, need, conn.writeChunkSize)
-		if err != nil {
+		if need, err = conn.encodeChunk1(head, need, conn.writeChunkSize); err != nil {
 			return err
 		}
-
-		_, err = conn.Write(mark)
-		if err != nil {
+		if err = conn.Flush(); err != nil {
 			return err
 		}
-
-		err = conn.Flush()
-		if err != nil {
-			return err
-		}
-
-		conn.writeSeqNum += uint32(len(mark))
 	}
-
 	return nil
 }
