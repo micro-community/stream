@@ -8,7 +8,6 @@ a streaming service built on go-micro ecosystem
 + Stream: TS/FLV/MP4  And PS in future
 + Session: RTSP/RTMP/HLV/GRPC
 
-
 ## Inspired By
 
 + [monibuca](https://github.com/Monibuca/engine)

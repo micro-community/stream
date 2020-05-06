@@ -1,9 +1,9 @@
-package QoS
+package qos
 
 import (
 	"strings"
 
-	. "github.com/micro-community/x-streaming/engine"
+	"github.com/micro-community/x-streaming/engine"
 )
 
 // var (
@@ -28,7 +28,7 @@ var config = struct {
 }{}
 
 func init() {
-	InstallPlugin(&PluginConfig{
+	engine.InstallPlugin(&engine.PluginConfig{
 		Name:   "QoS",
 		Type:   PLUGIN_HOOK,
 		Config: &config,
@@ -36,7 +36,7 @@ func init() {
 	})
 }
 func run() {
-	OnDropHooks.AddHook(func(s *Subscriber) {
+	engine.OnDropHooks.AddHook(func(s *engine.Subscriber) {
 		if s.TotalDrop > s.TotalPacket>>2 {
 			var newStreamPath = ""
 			for i, suf := range config.Suffix {
@@ -48,11 +48,6 @@ func run() {
 				} else {
 					newStreamPath = s.StreamPath + "/" + suf
 					break
-				}
-			}
-			if newStreamPath != "" {
-				if _, ok := AllRoom.Load(newStreamPath); ok {
-					s.Control <- &ChangeRoomCmd{s, AllRoom.Get(newStreamPath)}
 				}
 			}
 		}
