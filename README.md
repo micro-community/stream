@@ -13,6 +13,7 @@ a streaming service built on go-micro ecosystem
 + [monibuca](https://github.com/Monibuca/engine)
 + [websocket-streamserver](https://github.com/use-go/websocket-streamserver)
 + [websocket-mse](https://github.com/elsampsa/websocket-mse-demo)
++ [EasyDarwinGo](https://github.com/GB28181/EasyDarwinGo)
 
 ## License
 
