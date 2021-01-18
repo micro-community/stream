@@ -1,7 +1,7 @@
 package avformat
 
 import (
-	"github.com/micro-community/x-streaming/engine/util"
+	"github.com/micro-community/streaming/engine/util"
 )
 
 type MP4 interface {

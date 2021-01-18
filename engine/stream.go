@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/micro-community/x-streaming/engine/avformat"
+	"github.com/micro-community/streaming/engine/avformat"
 )
 
 var (

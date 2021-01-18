@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/micro-community/x-streaming/ws/session"
+	"github.com/micro-community/streaming/ws/session"
 	"github.com/micro/go-micro/v2/util/log"
 )
 

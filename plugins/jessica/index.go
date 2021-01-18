@@ -8,8 +8,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/micro-community/x-streaming/engine"
-	"github.com/micro-community/x-streaming/engine/util"
+	"github.com/micro-community/streaming/engine"
+	"github.com/micro-community/streaming/engine/util"
 )
 
 var config = new(engine.ListenerConfig)

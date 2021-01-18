@@ -3,8 +3,8 @@ package rtmp
 import (
 	"errors"
 
-	"github.com/micro-community/x-streaming/engine/pool"
-	"github.com/micro-community/x-streaming/engine/util"
+	"github.com/micro-community/streaming/engine/pool"
+	"github.com/micro-community/streaming/engine/util"
 )
 
 // RTMP协议中基本的数据单元称为消息(Message).

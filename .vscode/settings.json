@@ -4,5 +4,4 @@
     "go.formatTool": "goimports",
     "go.useLanguageServer": true,
     "editor.codeActionsOnSave": {"source.organizeImports": true},
-    "editor.codeActionsOnSaveTimeout": 750,
 }

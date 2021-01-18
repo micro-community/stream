@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/micro-community/x-streaming/engine/util"
+	"github.com/micro-community/streaming/engine/util"
 )
 
 //Plugin Manager

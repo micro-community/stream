@@ -3,8 +3,8 @@ package hls
 import (
 	"errors"
 
-	"github.com/micro-community/x-streaming/engine/avformat"
-	"github.com/micro-community/x-streaming/engine/avformat/mpegts"
+	"github.com/micro-community/streaming/engine/avformat"
+	"github.com/micro-community/streaming/engine/avformat/mpegts"
 )
 
 func rtmpAudioPacketToPESPreprocess(aacRaw []byte, aac_asc avformat.AudioSpecificConfig) (data []byte, err error) {

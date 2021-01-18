@@ -8,8 +8,8 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/micro-community/x-streaming/engine/pool"
-	"github.com/micro-community/x-streaming/engine/util"
+	"github.com/micro-community/streaming/engine/pool"
+	"github.com/micro-community/streaming/engine/util"
 )
 
 // Action Message Format -- AMF 0

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/micro-community/x-streaming/engine/avformat"
-	"github.com/micro-community/x-streaming/engine/avformat/mpegts"
+	"github.com/micro-community/streaming/engine/avformat"
+	"github.com/micro-community/streaming/engine/avformat/mpegts"
 )
 
 func writeHLS(r *Stream) {

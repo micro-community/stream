@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/micro-community/x-streaming/engine/avformat"
+	"github.com/micro-community/streaming/engine/avformat"
 	"github.com/pkg/errors"
 )
 

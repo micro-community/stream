@@ -4,9 +4,9 @@ import (
 	"errors"
 	"os"
 
-	"github.com/micro-community/x-streaming/engine/avformat"
-	"github.com/micro-community/x-streaming/engine/avformat/mpegts"
-	"github.com/micro-community/x-streaming/engine/util"
+	"github.com/micro-community/streaming/engine/avformat"
+	"github.com/micro-community/streaming/engine/avformat/mpegts"
+	"github.com/micro-community/streaming/engine/util"
 )
 
 func decodeAVCDecoderConfigurationRecord(video *avformat.SendPacket) (avc_dcr avformat.AVCDecoderConfigurationRecord, err error) {

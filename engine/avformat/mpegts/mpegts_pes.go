@@ -7,8 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/micro-community/x-streaming/engine/avformat"
-	"github.com/micro-community/x-streaming/engine/util"
+	"github.com/micro-community/streaming/engine/avformat"
+	"github.com/micro-community/streaming/engine/util"
 )
 
 // ios13818-1-CN.pdf 45/166

@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/gobwas/ws"
-	"github.com/micro-community/x-streaming/engine"
-	"github.com/micro-community/x-streaming/engine/avformat"
-	"github.com/micro-community/x-streaming/engine/pool"
+	"github.com/micro-community/streaming/engine"
+	"github.com/micro-community/streaming/engine/avformat"
+	"github.com/micro-community/streaming/engine/pool"
 )
 
 //WsHandler for websocket

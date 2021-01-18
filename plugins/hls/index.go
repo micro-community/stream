@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/micro-community/x-streaming/engine"
+	"github.com/micro-community/streaming/engine"
 	"github.com/quangngotan95/go-m3u8/m3u8"
 )
 

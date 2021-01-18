@@ -8,9 +8,9 @@ import (
 	"net"
 	"strings"
 
-	. "github.com/micro-community/x-streaming/engine"
-	"github.com/micro-community/x-streaming/engine/avformat"
-	"github.com/micro-community/x-streaming/engine/pool"
+	. "github.com/micro-community/streaming/engine"
+	"github.com/micro-community/streaming/engine/avformat"
+	"github.com/micro-community/streaming/engine/pool"
 )
 
 type Receiver struct {

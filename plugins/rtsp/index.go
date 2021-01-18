@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/micro-community/x-streaming/engine"
-	"github.com/micro-community/x-streaming/engine/avformat"
-	"github.com/micro-community/x-streaming/engine/util"
+	"github.com/micro-community/streaming/engine"
+	"github.com/micro-community/streaming/engine/avformat"
+	"github.com/micro-community/streaming/engine/util"
 )
 
 var collection = sync.Map{}

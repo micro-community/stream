@@ -3,7 +3,7 @@ package engine
 import (
 	"sync"
 
-	"github.com/micro-community/x-streaming/engine/avformat"
+	"github.com/micro-community/streaming/engine/avformat"
 )
 
 type RingItem struct {

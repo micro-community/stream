@@ -3,8 +3,8 @@ package avformat
 import (
 	"io"
 
-	"github.com/micro-community/x-streaming/engine/pool"
-	"github.com/micro-community/x-streaming/engine/util"
+	"github.com/micro-community/streaming/engine/pool"
+	"github.com/micro-community/streaming/engine/util"
 )
 
 const (

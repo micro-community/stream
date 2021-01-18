@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/micro-community/x-streaming/engine"
+	"github.com/micro-community/streaming/engine"
 )
 
 const (

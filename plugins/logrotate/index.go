@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/micro-community/x-streaming/engine"
+	"github.com/micro-community/streaming/engine"
 )
 
 var config = new(LogRotate)

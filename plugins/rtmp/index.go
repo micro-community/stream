@@ -3,7 +3,7 @@ package rtmp
 import (
 	"log"
 
-	. "github.com/micro-community/x-streaming/engine"
+	. "github.com/micro-community/streaming/engine"
 )
 
 var config = struct {
