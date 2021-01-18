@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/logrusorgru/aurora v0.0.0-20200102142835-e9ef32dff381
 	github.com/mattn/go-colorable v0.1.6
-	github.com/micro/go-micro/v2 v2.6.0
+	github.com/micro/go-micro/v2 v2.9.1
 	github.com/pkg/errors v0.9.1
 	github.com/quangngotan95/go-m3u8 v0.1.0
 	github.com/shirou/gopsutil v2.20.4+incompatible
