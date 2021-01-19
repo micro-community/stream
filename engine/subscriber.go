@@ -2,7 +2,6 @@ package engine
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/micro-community/streaming/engine/avformat"
@@ -25,10 +24,13 @@ type Subscriber struct {
 	context.Context
 	*Stream
 	SubscriberInfo
+	MetaData   func(stream *Stream) error
 	OnData     func(*avformat.SendPacket) error
 	Cancel     context.CancelFunc
 	Sign       string
 	OffsetTime uint32
+	startTime  uint32
+	avformat.SendPacket
 }
 
 // IsClosed 检查订阅者是否已经关闭
@@ -45,63 +47,83 @@ func (s *Subscriber) Close() {
 
 //Subscribe 开始订阅
 func (s *Subscriber) Subscribe(streamPath string) (err error) {
-	if !Config.EnableWaitStream {
-		if _, ok := streamCollection.Load(streamPath); !ok {
-			return errors.New(fmt.Sprintf("Stream not found:%s", streamPath))
-		}
+	if !Config.EnableWaitStream && FindStream(streamPath) == nil {
+		return errors.Errorf("Stream not found:%s", streamPath)
 	}
 	GetStream(streamPath).Subscribe(s)
+	if s.Context == nil {
+		return errors.Errorf("stream not exist:%s", streamPath)
+	}
 	defer s.UnSubscribe(s)
-	//加锁解锁的目的是等待发布者首屏数据，如果发布者尚为发布，则会等待，否则就会往下执行
-	s.WaitingMutex.RLock()
-	s.WaitingMutex.RUnlock()
-	sendPacket := avformat.NewSendPacket(s.VideoTag, 0)
-	defer sendPacket.Recycle()
-	s.OnData(sendPacket)
-	packet := s.FirstScreen.Clone()
-	startTime := packet.Timestamp
-	packet.RLock()
-	sendPacket.AVPacket = &packet.AVPacket
-	s.OnData(sendPacket)
-	packet.NextR()
-	atsent := false
-	dropping := false
-	droped := 0
-	for {
-		select {
-		case <-s.Done():
-			return s.Err()
-		default:
+	select {
+	//等待发布者首屏数据，如果发布者尚为发布，则会等待，否则就会往下执行
+	case <-s.WaitPub:
+	case <-s.Context.Done():
+		return s.Err()
+	}
+	if s.MetaData != nil {
+		if err = s.MetaData(s.Stream); err != nil {
+			return err
+		}
+	}
+	if *s.EnableVideo {
+		s.sendAv(s.VideoTag, 0)
+		packet := s.FirstScreen.Clone()
+		s.startTime = packet.Timestamp // 开始时间戳，第一个关键帧的
+		s.Delay = s.AVRing.GetLast().Timestamp - packet.Timestamp
+		packet.Wait()
+		s.send(packet)
+		packet.NextR()
+		// targetStartTime := s.AVRing.GetLast().Timestamp //实际开始时间戳
+		for atsent, dropping, droped := s.AudioTag == nil, false, 0; s.Err() == nil; packet.NextR() {
 			s.TotalPacket++
-			packet.RLock()
 			if !dropping {
-				if packet.Type == avformat.FLV_TAG_TYPE_AUDIO && !atsent {
-					sendPacket.AVPacket = s.AudioTag
-					sendPacket.Timestamp = 0
-					s.OnData(sendPacket)
+				if !atsent && packet.Type == avformat.FLV_TAG_TYPE_AUDIO {
+					s.sendAv(s.AudioTag, 0)
 					atsent = true
 				}
-				sendPacket.AVPacket = &packet.AVPacket
-				sendPacket.Timestamp = packet.Timestamp - startTime
-				s.OnData(sendPacket)
+				s.sendAv(&packet.AVPacket, packet.Timestamp-s.startTime)
+				// if targetStartTime > s.startTime {
+				// 	s.startTime++ //逐步追赶，使得开始时间逼近实际开始时间戳
+				// }
 				if s.checkDrop(packet) {
 					dropping = true
 					droped = 0
 				}
-				packet.NextR()
 			} else if packet.IsKeyFrame {
 				//遇到关键帧则退出丢帧
 				dropping = false
 				//fmt.Println("drop package ", droped)
 				s.TotalDrop += droped
-				packet.RUnlock()
+				s.send(packet)
 			} else {
 				droped++
-				packet.NextR()
 			}
 		}
+	} else if *s.EnableAudio {
+		if s.AudioTag != nil {
+			s.sendAv(s.AudioTag, 0)
+		}
+		for packet := s.AVRing; s.Err() == nil; packet.NextR() {
+			s.TotalPacket++
+			s.send(packet)
+		}
+	}
+	return s.Err()
+}
+
+func (s *Subscriber) sendAv(packet *avformat.AVPacket, t uint32) {
+	s.AVPacket = packet
+	s.Timestamp = t
+	if s.OnData(&s.SendPacket) != nil {
+		s.Close()
 	}
 }
+func (s *Subscriber) send(packet *Ring) {
+
+	s.sendAv(&packet.AVPacket, packet.Timestamp-s.startTime)
+}
+
 func (s *Subscriber) checkDrop(packet *Ring) bool {
 	pIndex := s.AVRing.Index
 	s.BufferLength = pIndex - packet.Index

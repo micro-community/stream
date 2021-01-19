@@ -6,6 +6,7 @@ import (
 	"github.com/micro-community/streaming/engine/util/bits"
 )
 
+//SPSInfore
 type SPSInfo struct {
 	ProfileIdc uint
 	LevelIdc   uint

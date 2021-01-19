@@ -6,6 +6,9 @@ import "time"
 type Parameters struct {
 	EnableWaitStream bool
 	RingSize         int
+	EnableAudio      bool
+	EnableVideo      bool
+	PublishTimeout   time.Duration
 }
 
 //ExtendInfo for extension
@@ -17,7 +20,7 @@ type ExtendInfo struct {
 
 //Settings for engine
 var (
-	Config = &Parameters{true, 10}
+	Config = &Parameters{true, 10, false, true, time.Minute}
 
 	// ConfigRaw 配置信息的原始数据
 	ConfigRaw []byte

@@ -1,14 +1,18 @@
 package engine
 
 import (
+	"bytes"
 	"sync"
+	"time"
 
 	"github.com/micro-community/streaming/engine/avformat"
 )
 
 type RingItem struct {
 	avformat.AVPacket
-	sync.RWMutex
+	sync.WaitGroup
+	*bytes.Buffer
+	UpdateTime time.Time
 }
 
 // Ring 环形缓冲，使用数组实现
@@ -25,7 +29,7 @@ func NewRing(exp int) (r *Ring) {
 	r.Size = 1 << exp
 	r.buffer = make([]RingItem, r.Size)
 	r.RingItem = &r.buffer[0]
-	r.Lock()
+	r.Add(1)
 	return
 }
 func (r *Ring) offset(v int) int {
@@ -68,18 +72,33 @@ func (r *Ring) GoBack() {
 // NextW 写下一个
 func (r *Ring) NextW() {
 	item := r.RingItem
+	item.UpdateTime = time.Now()
 	r.GoNext()
-	r.RingItem.Lock()
-	item.Unlock()
+	r.RingItem.Add(1)
+	item.Done()
 }
 
 // NextR 读下一个
 func (r *Ring) NextR() {
-	r.RingItem.RUnlock()
 	r.GoNext()
+	r.Wait()
+}
+
+func (r *Ring) GetBuffer() *bytes.Buffer {
+	if r.Buffer == nil {
+		r.Buffer = bytes.NewBuffer([]byte{})
+	} else {
+		r.Reset()
+	}
+	return r.Buffer
 }
 
 // Clone 克隆一个Ring
 func (r Ring) Clone() *Ring {
 	return &r
+}
+
+// Timeout 发布者是否超时了
+func (r *Ring) Timeout() bool {
+	return time.Since(r.UpdateTime) > Config.PublishTimeout
 }

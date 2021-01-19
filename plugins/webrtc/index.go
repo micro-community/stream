@@ -101,26 +101,7 @@ func (rtc *WebRTC) Play(streamPath string) bool {
 				Data:    packet.Payload,
 				Samples: s * 90,
 			})
-			// if packet.IsKeyFrame {
-			// 	rtc.videoTrack.WriteSample(media.Sample{
-			// 		Data:    sub.SPS,
-			// 		Samples: 0,
-			// 	})
-			// 	rtc.videoTrack.WriteSample(media.Sample{
-			// 		Data:    sub.PPS,
-			// 		Samples: 0,
-			// 	})
-			// }
-			// for payload := packet.Payload[5:]; len(payload) > 4; {
-			// 	var naulLen = int(util.BigEndian.Uint32(payload))
-			// 	payload = payload[4:]
-			// 	rtc.videoTrack.WriteSample(media.Sample{
-			// 		Data:    payload[:naulLen],
-			// 		Samples: s * 90,
-			// 	})
-			// 	s = 0
-			// 	payload = payload[naulLen:]
-			// }
+
 		}
 		return nil
 	}
@@ -134,7 +115,7 @@ func (rtc *WebRTC) Play(streamPath string) bool {
 		case ICEConnectionStateConnected:
 
 			//rtc.videoTrack = rtc.GetSenders()[0].Track()
-			sub.Subscribe(streamPath)
+			_ = sub.Subscribe(streamPath)
 		}
 	})
 	return true
@@ -152,7 +133,7 @@ func (rtc *WebRTC) Publish(streamPath string) bool {
 		rtc.s.SetNAT1To1IPs(config.PublicIP, ICECandidateTypeHost)
 	}
 	if config.PortMin > 0 && config.PortMax > 0 {
-		rtc.s.SetEphemeralUDPPortRange(config.PortMin, config.PortMax)
+		_ = rtc.s.SetEphemeralUDPPortRange(config.PortMin, config.PortMax)
 	}
 	rtc.api = NewAPI(WithMediaEngine(rtc.m), WithSettingEngine(rtc.s))
 	peerConnection, err := rtc.api.NewPeerConnection(Configuration{
@@ -195,7 +176,7 @@ func (rtc *WebRTC) Publish(streamPath string) bool {
 				select {
 				case <-ticker.C:
 					if rtcpErr := peerConnection.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: track.SSRC()}}); rtcpErr != nil {
-						fmt.engine.Println(rtcpErr)
+						engine.Println(rtcpErr)
 					}
 				case <-rtc.Done():
 					return
@@ -271,7 +252,7 @@ func run() {
 		}
 
 		pli := "42001f"
-		if stream := FindStream(streamPath); stream != nil {
+		if stream := engine.FindStream(streamPath); stream != nil {
 			<-stream.WaitPub
 			pli = fmt.Sprintf("%x", stream.SPS[1:4])
 		}
@@ -290,7 +271,7 @@ func run() {
 			rtc.s.SetNAT1To1IPs(config.PublicIP, ICECandidateTypeHost)
 		}
 		if config.PortMin > 0 && config.PortMax > 0 {
-			rtc.s.SetEphemeralUDPPortRange(config.PortMin, config.PortMax)
+			_ = rtc.s.SetEphemeralUDPPortRange(config.PortMin, config.PortMax)
 		}
 		rtc.api = NewAPI(WithMediaEngine(rtc.m), WithSettingEngine(rtc.s))
 
@@ -308,27 +289,12 @@ func run() {
 				engine.Println(ice.ToJSON().Candidate)
 			}
 		})
-		// if r, err := peerConnection.AddTransceiverFromKind(RTPCodecTypeVideo); err == nil {
-		// 	rtc.videoTrack = r.Sender().Track()
-		// } else {
-		// 	engine.Println(err)
-		// }
+
 		rtc.RemoteAddr = r.RemoteAddr
 		if err = rtc.SetRemoteDescription(offer); err != nil {
 			return
 		}
-		// rtc.m.PopulateFromSDP(offer)
-		// var vpayloadType uint8 = 0
 
-		// for _, videoCodec := range rtc.m.GetCodecsByKind(RTPCodecTypeVideo) {
-		// 	if videoCodec.Name == H264 {
-		// 		vpayloadType = videoCodec.PayloadType
-		// 		videoCodec.Payloader = &rtc.payloader
-		// 		engine.Printf("H264 fmtp %v", videoCodec.SDPFmtpLine)
-
-		// 	}
-		// }
-		// println(vpayloadType)
 		if rtc.videoTrack, err = rtc.NewTrack(DefaultPayloadTypeH264, 8, "video", "monibuca"); err != nil {
 			return
 		}
@@ -339,7 +305,7 @@ func run() {
 			return
 		}
 		if bytes, err := rtc.GetAnswer(); err == nil {
-			w.Write(bytes)
+			_, _ = w.Write(bytes)
 		} else {
 			return
 		}
@@ -349,6 +315,10 @@ func run() {
 		streamPath := r.URL.Query().Get("streamPath")
 		offer := SessionDescription{}
 		bytes, err := ioutil.ReadAll(r.Body)
+
+		if err != nil {
+			_, _ = w.Write([]byte(err.Error()))
+		}
 		err = json.Unmarshal(bytes, &offer)
 		if err != nil {
 			engine.Println(err)
@@ -362,7 +332,7 @@ func run() {
 				return
 			}
 			if bytes, err = rtc.GetAnswer(); err == nil {
-				w.Write(bytes)
+				_, _ = w.Write(bytes)
 			} else {
 				engine.Println(err)
 				w.Write([]byte(err.Error()))
