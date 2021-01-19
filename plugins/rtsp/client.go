@@ -2,7 +2,7 @@ package rtsp
 
 import (
 	"crypto/md5"
-	b64 "encoding/base64"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -289,22 +289,7 @@ func (c *Client) RtspRtpLoop() {
 					break
 				}
 			}
-			/*
-				//вычитываем 256 в попытке отсять мусор обрезать RTSP
-				if string(header) == "RTSP" {
-					if n, err := io.ReadFull(c.socket, sync); err != nil && n == 256 {
-						return
-					} else {
-						rtsp_rtp := []byte(strings.Split(string(sync), "\r\n\r\n")[1])
-						//отправим все что есть в буфере
-						c.SendBufer(rtsp_rtp)
-						continue
-					}
-				} else {
-					log.Println("full desync")
-					return
-				}
-			*/
+
 		}
 
 		payloadLen := (int)(header[2])<<8 + (int)(header[3])
@@ -371,7 +356,7 @@ func (c *Client) Read() (bool, string) {
 	}
 }
 func (c *Client) AuthBasic(phase string, message string) bool {
-	c.bauth = "\r\nAuthorization: Basic " + b64.StdEncoding.EncodeToString([]byte(c.login+":"+c.password))
+	c.bauth = "\r\nAuthorization: Basic " + base64.StdEncoding.EncodeToString([]byte(c.login+":"+c.password))
 	if !c.Write(phase + " " + c.uri + " RTSP/1.0\r\nCSeq: " + strconv.Itoa(c.cseq) + c.bauth + "\r\n\r\n") {
 		return false
 	}
@@ -457,48 +442,6 @@ func ParseSession(header string) string {
 	return ""
 }
 
-// func ParseMedia(header string) []string {
-// 	letters := []string{}
-// 	mparsed := strings.Split(header, "\r\n")
-// 	paste := ""
-
-// 	// if true {
-// 	// 	log.Println("headers", header)
-// 	// }
-
-// 	for _, element := range mparsed {
-// 		if strings.Contains(element, "a=control:") && !strings.Contains(element, "*") {
-// 			paste = element[10:]
-// 			if strings.Contains(element, "/") {
-// 				striped := strings.Split(element, "/")
-// 				paste = striped[len(striped)-1]
-// 			}
-// 			letters = append(letters, paste)
-// 		}
-
-// 		dimensionsPrefix := "a=x-dimensions:"
-// 		if strings.HasPrefix(element, dimensionsPrefix) {
-// 			dims := []int{}
-// 			for _, s := range strings.Split(element[len(dimensionsPrefix):], ",") {
-// 				v := 0
-// 				fmt.Sscanf(s, "%d", &v)
-// 				if v <= 0 {
-// 					break
-// 				}
-// 				dims = append(dims, v)
-// 			}
-// 			if len(dims) == 2 {
-// 				VideoWidth = dims[0]
-// 				VideoHeight = dims[1]
-// 			}
-// 		}
-// 		if strings.Contains(element, "sprop-parameter-sets") {
-// 			group := spropReg.FindAllStringSubmatch(element, -1)
-// 			log.Println(group[1])
-// 		}
-// 	}
-// 	return letters
-// }
 func GetMD5Hash(text string) string {
 	hash := md5.Sum([]byte(text))
 	return hex.EncodeToString(hash[:])
@@ -539,8 +482,8 @@ func (c *Client) ParseMedia(header string) []string {
 		group := spropReg.FindAllStringSubmatch(element, -1)
 		if len(group) > 0 {
 			group := strings.Split(group[0][1], ",")
-			c.SPS, _ = b64.StdEncoding.DecodeString(group[0])
-			c.PPS, _ = b64.StdEncoding.DecodeString(group[1])
+			c.SPS, _ = base64.StdEncoding.DecodeString(group[0])
+			c.PPS, _ = base64.StdEncoding.DecodeString(group[1])
 		} else if group = configReg.FindAllStringSubmatch(element, -1); len(group) > 0 {
 			c.AudioSpecificConfig, _ = hex.DecodeString(group[0][1])
 		}

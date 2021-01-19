@@ -9,7 +9,6 @@
         "toml"
     ],
     "enabled": true,
-    // words - list of words to be always considered correct
     "words": [
         "aacsent",
         "aapi",
@@ -91,6 +90,7 @@
         "smucp",
         "snaker",
         "sprop",
+        "STAPA",
         "storecli",
         "streamserver",
         "streamuuid",
@@ -98,14 +98,13 @@
         "tmpl",
         "Tracef",
         "tsmerge",
+        "upgrader",
         "uuid",
         "vals",
         "visualstudio",
-        "vsmarketplacebadge"
+        "vsmarketplacebadge",
+        "webrtc"
     ],
-    // flagWords - list of words to be always considered incorrect
-    // This is useful for offensive words and common spelling errors.
-    // For example "hte" should be "the"
     "flagWords": [
         "hte"
     ]

@@ -52,7 +52,7 @@ type TSDir struct {
 	TotalSize  int64
 }
 type TS struct {
-	Publisher
+	engine.Publisher
 	*mpegts.MpegTsStream
 	TSInfo
 	//TsChan     chan io.Reader
@@ -65,7 +65,7 @@ type TSInfo struct {
 	DTS           uint64
 	PesCount      int
 	BufferLength  int
-	StreamInfo    *StreamInfo
+	StreamInfo    *engine.StreamInfo
 }
 
 func (ts *TS) run() {
@@ -165,7 +165,7 @@ func (ts *TS) run() {
 						}
 						_, err = r.Write(v)
 					}
-					if MayBeError(err) {
+					if engine.MayBeError(err) {
 						return
 					}
 					ts.PushVideo(uint32(dts/90), r.Bytes())
