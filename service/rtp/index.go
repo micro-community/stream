@@ -1,9 +1,9 @@
 package rtp
 
 import (
-	"github.com/micro-community/streaming/engine"
-	"github.com/micro-community/streaming/engine/avformat"
-	"github.com/micro-community/streaming/engine/util"
+	"github.com/micro-community/stream/engine"
+	"github.com/micro-community/stream/engine/avformat"
+	"github.com/micro-community/stream/engine/util"
 	"github.com/pion/rtp"
 )
 

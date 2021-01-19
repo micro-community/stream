@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/micro-community/streaming/engine/avformat"
+	"github.com/micro-community/stream/engine/avformat"
 	"github.com/pkg/errors"
 )
 

@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"path"
 
-	"github.com/micro-community/streaming/engine/util"
+	"github.com/micro-community/stream/engine/util"
 )
 
 //InstanceDesc for streaming

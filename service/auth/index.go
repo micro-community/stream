@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/micro-community/streaming/engine"
+	"github.com/micro-community/stream/engine"
 )
 
 var (

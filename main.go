@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/micro-community/streaming/ws"
+	"github.com/micro-community/stream/ws"
 	log "github.com/micro/go-micro/v2/logger"
 	"github.com/micro/go-micro/v2/web"
 )

@@ -17,9 +17,9 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/micro-community/streaming/engine"
-	"github.com/micro-community/streaming/engine/util"
-	"github.com/micro-community/streaming/manager"
+	"github.com/micro-community/stream/engine"
+	"github.com/micro-community/stream/engine/util"
+	"github.com/micro-community/stream/manager"
 )
 
 var instances = make(map[string]*manager.InstanceDesc)

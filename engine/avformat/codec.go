@@ -3,7 +3,7 @@ package avformat
 import (
 	"errors"
 
-	"github.com/micro-community/streaming/engine/util"
+	"github.com/micro-community/stream/engine/util"
 )
 
 const (

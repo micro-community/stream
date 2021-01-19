@@ -3,7 +3,7 @@ package qos
 import (
 	"strings"
 
-	"github.com/micro-community/streaming/engine"
+	"github.com/micro-community/stream/engine"
 )
 
 // var (

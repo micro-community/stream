@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/micro-community/streaming/engine"
+	"github.com/micro-community/stream/engine"
 
-	"github.com/micro-community/streaming/engine/util"
+	"github.com/micro-community/stream/engine/util"
 )
 
 var config = struct {

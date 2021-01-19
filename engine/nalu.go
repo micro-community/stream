@@ -3,7 +3,7 @@ package engine
 import (
 	"encoding/binary"
 
-	"github.com/micro-community/streaming/engine/avformat"
+	"github.com/micro-community/stream/engine/avformat"
 )
 
 const (

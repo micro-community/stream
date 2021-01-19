@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	engine "github.com/micro-community/streaming/engine"
-	"github.com/micro-community/streaming/engine/avformat"
-	. "github.com/micro-community/streaming/plugins/rtp"
+	engine "github.com/micro-community/stream/engine"
+	"github.com/micro-community/stream/engine/avformat"
+	. "github.com/micro-community/stream/service/rtp"
 	"github.com/pion/rtcp"
 	. "github.com/pion/webrtc/v2"
 	"github.com/pion/webrtc/v2/pkg/media"

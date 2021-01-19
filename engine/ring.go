@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/micro-community/streaming/engine/avformat"
+	"github.com/micro-community/stream/engine/avformat"
 )
 
 type RingItem struct {

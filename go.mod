@@ -1,4 +1,4 @@
-module github.com/micro-community/streaming
+module github.com/micro-community/stream
 
 go 1.14
 
