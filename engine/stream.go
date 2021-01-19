@@ -63,6 +63,8 @@ type Stream struct {
 	AVRing       *Ring                  //数据环
 	WaitingMutex *sync.RWMutex          //用于订阅和等待发布者
 	UseTimestamp bool                   //是否采用数据包中的时间戳
+	SPS          []byte
+	PPS          []byte
 }
 
 // StreamInfo 流可序列化信息，用于控制台显示
@@ -253,6 +255,25 @@ func (r *Stream) setH264Info(video *Ring) {
 	if _, err := info.Unmarshal(video.Payload[5:]); err == nil {
 		r.VideoInfo.SPSInfo, err = avformat.ParseSPS(info.SequenceParameterSetNALUnit)
 	}
+}
+
+func (r *Stream) WriteSPS(sps []byte) {
+	lenSPS := len(sps)
+	r.SPS = sps
+	if r.VideoTag == nil {
+		r.VideoTag = avformat.NewAVPacket(avformat.FLV_TAG_TYPE_VIDEO)
+		r.VideoTag.IsSequence = true
+		r.VideoTag.IsKeyFrame = true
+		r.VideoTag.Payload = append(r.VideoTag.Payload, avformat.RTMP_AVC_HEAD...)
+	}
+	r.VideoInfo.SPSInfo, _ = avformat.ParseSPS(sps)
+	copy(r.VideoTag.Payload[6:], sps[1:4])
+	r.VideoTag.Payload = append(append(r.VideoTag.Payload[:10], 0xE1, byte(lenSPS>>8), byte(lenSPS)), sps...)
+}
+func (r *Stream) WritePPS(pps []byte) {
+	lenPPS := len(pps)
+	r.PPS = pps
+	r.VideoTag.Payload = append(append(r.VideoTag.Payload, 0x01, byte(lenPPS>>8), byte(lenPPS)), pps...)
 }
 
 // PushVideo 来自发布者推送的视频

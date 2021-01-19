@@ -39,7 +39,8 @@ const (
 	NALU_Reserved3             = 21
 	NALU_Reserved4             = 22
 	NALU_Reserved5             = 23
-	NALU_NotReserved           = 24
+	NALU_STAPA                 = 24
+	NALU_FUA                   = 28
 	// 24 - 31 NALU_NotReserved
 )
 
