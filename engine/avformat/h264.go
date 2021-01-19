@@ -1,7 +1,10 @@
 package avformat
 
 import (
+	"bytes"
 	"io"
+
+	"github.com/micro-community/streaming/engine/util"
 )
 
 // Start Code + NAL Unit -> NALU Header + NALU Body
@@ -45,9 +48,17 @@ const (
 )
 
 var (
-	NALU_AUD_BYTE         = []byte{0x00, 0x00, 0x00, 0x01, 0x09, 0xF0}
-	NALU_Delimiter1       = []byte{0x00, 0x00, 0x01}
-	NALU_Delimiter2       = []byte{0x00, 0x00, 0x00, 0x01}
+	NALU_AUD_BYTE   = []byte{0x00, 0x00, 0x00, 0x01, 0x09, 0xF0}
+	NALU_Delimiter1 = []byte{0x00, 0x00, 0x01}
+	NALU_Delimiter2 = []byte{0x00, 0x00, 0x00, 0x01}
+	// 0x17 keyframe  7:AVC
+	// 0x00 AVC sequence header
+	// 0x00 0x00 0x00
+	// 0x01 configurationVersion
+	// 0x42 AVCProfileIndication
+	// 0x00 profile_compatibility
+	// 0x1E AVCLevelIndication
+	// 0xFF lengthSizeMinusOne
 	RTMP_AVC_HEAD         = []byte{0x17, 0x00, 0x00, 0x00, 0x00, 0x01, 0x42, 0x00, 0x1E, 0xFF}
 	RTMP_KEYFRAME_HEAD    = []byte{0x17, 0x01, 0x00, 0x00, 0x00}
 	RTMP_NORMALFRAME_HEAD = []byte{0x27, 0x01, 0x00, 0x00, 0x00}
@@ -57,8 +68,114 @@ var NALU_SEI_BYTE []byte
 // H.264/AVC视频编码标准中,整个系统框架被分为了两个层面:视频编码层面(VCL)和网络抽象层面(NAL)
 // NAL - Network Abstract Layer
 // raw byte sequence payload (RBSP) 原始字节序列载荷
+// SplitH264 以0x00000001分割H264裸数据
+func SplitH264(payload []byte) (nalus [][]byte) {
+	for _, v := range bytes.SplitN(payload, NALU_Delimiter2, -1) {
+		if len(v) == 0 {
+			continue
+		}
+		nalus = append(nalus, bytes.SplitN(v, NALU_Delimiter1, -1)...)
+	}
+	return
+}
 
 type H264 struct {
+	SPS []byte
+	PPS []byte
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+//Payload 分包，用于RTP传输
+func (h264 *H264) Payload(mtu int, payload []byte) (payloads [][]byte) {
+	if payload == nil {
+		return payloads
+	}
+	videoFrameType := payload[0] >> 4
+	if videoFrameType == 1 || videoFrameType == 4 {
+		payloads = append(payloads, h264.SPS, h264.PPS)
+	}
+	for nalu, naluLen := payload[5:], 4; len(nalu) > naluLen; naluLen = int(util.BigEndian.Uint32(nalu)) + 4 {
+		nalu = nalu[naluLen:]
+		naluType := nalu[0] & 0x1F   //00011111
+		naluRefIdc := nalu[0] & 0x60 //1110000
+
+		if naluType == 9 || naluType == 12 {
+			continue
+		}
+
+		// Single NALU
+		if len(nalu) <= mtu {
+			out := make([]byte, len(nalu))
+			copy(out, nalu)
+			payloads = append(payloads, out)
+			continue
+		}
+
+		// FU-A
+		maxFragmentSize := mtu - 2
+
+		// The FU payload consists of fragments of the payload of the fragmented
+		// NAL unit so that if the fragmentation unit payloads of consecutive
+		// FUs are sequentially concatenated, the payload of the fragmented NAL
+		// unit can be reconstructed.  The NAL unit type octet of the fragmented
+		// NAL unit is not included as such in the fragmentation unit payload,
+		// 	but rather the information of the NAL unit type octet of the
+		// fragmented NAL unit is conveyed in the F and NRI fields of the FU
+		// indicator octet of the fragmentation unit and in the type field of
+		// the FU header.  An FU payload MAY have any number of octets and MAY
+		// be empty.
+
+		naluData := nalu
+		// According to the RFC, the first octet is skipped due to redundant information
+		naluDataIndex := 1
+		naluDataLength := len(nalu) - naluDataIndex
+		naluDataRemaining := naluDataLength
+
+		if min(maxFragmentSize, naluDataRemaining) <= 0 {
+			continue
+		}
+
+		for naluDataRemaining > 0 {
+			currentFragmentSize := min(maxFragmentSize, naluDataRemaining)
+			out := make([]byte, 2+currentFragmentSize)
+
+			// +---------------+
+			// |0|1|2|3|4|5|6|7|
+			// +-+-+-+-+-+-+-+-+
+			// |F|NRI|  Type   |
+			// +---------------+
+			out[0] = NALU_FUA | naluRefIdc
+
+			// +---------------+
+			//|0|1|2|3|4|5|6|7|
+			//+-+-+-+-+-+-+-+-+
+			//|S|E|R|  Type   |
+			//+---------------+
+
+			out[1] = naluType
+			if naluDataRemaining == naluDataLength {
+				// Set start bit
+				out[1] |= 1 << 7
+			} else if naluDataRemaining-currentFragmentSize == 0 {
+				// Set end bit
+				out[1] |= 1 << 6
+			}
+
+			copy(out[2:], naluData[naluDataIndex:naluDataIndex+currentFragmentSize])
+			payloads = append(payloads, out)
+
+			naluDataRemaining -= currentFragmentSize
+			naluDataIndex += currentFragmentSize
+		}
+
+	}
+	return
 }
 
 type NALUnit struct {
@@ -66,6 +183,7 @@ type NALUnit struct {
 	RBSP
 }
 
+//NALUHeader for h264
 type NALUHeader struct {
 	forbidden_zero_bit byte // 1 bit  0
 	nal_ref_idc        byte // 2 bits nal_unit_type等于6,9,10,11或12的NAL单元其nal_ref_idc都应等于 0
