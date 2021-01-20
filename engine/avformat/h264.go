@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/micro-community/stream/engine/util"
+	"github.com/micro-community/stream/util"
 )
 
 // Start Code + NAL Unit -> NALU Header + NALU Body

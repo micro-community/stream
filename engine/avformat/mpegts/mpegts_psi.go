@@ -6,7 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/micro-community/stream/engine/util"
+	"github.com/micro-community/stream/util"
 )
 
 //

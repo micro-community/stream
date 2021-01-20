@@ -25,7 +25,7 @@ var config struct {
 	PortMax    uint16
 }
 
-var playWaitList WaitList
+//var playWaitList WaitList
 var reg_level = regexp.MustCompile("profile-level-id=(4.+f)")
 
 type WaitList struct {
@@ -82,7 +82,7 @@ func (rtc *WebRTC) Play(streamPath string) bool {
 				s = packet.Timestamp - lastTiimeStampA
 			}
 			lastTiimeStampA = packet.Timestamp
-			rtc.audioTrack.WriteSample(media.Sample{
+			_ = rtc.audioTrack.WriteSample(media.Sample{
 				Data:    packet.Payload[1:],
 				Samples: s * 8,
 			})
@@ -97,7 +97,7 @@ func (rtc *WebRTC) Play(streamPath string) bool {
 				s = packet.Timestamp - lastTimeStampV
 			}
 			lastTimeStampV = packet.Timestamp
-			rtc.videoTrack.WriteSample(media.Sample{
+			_ = rtc.videoTrack.WriteSample(media.Sample{
 				Data:    packet.Payload,
 				Samples: s * 90,
 			})
@@ -335,11 +335,11 @@ func run() {
 				_, _ = w.Write(bytes)
 			} else {
 				engine.Println(err)
-				w.Write([]byte(err.Error()))
+				_, _ = w.Write([]byte(err.Error()))
 				return
 			}
 		} else {
-			w.Write([]byte("bad name"))
+			_, _ = w.Write([]byte("bad name"))
 		}
 	})
 }

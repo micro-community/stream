@@ -11,7 +11,7 @@ import (
 
 	"github.com/micro-community/stream/engine"
 	"github.com/micro-community/stream/engine/avformat"
-	"github.com/micro-community/stream/engine/util"
+	"github.com/micro-community/stream/util"
 )
 
 var collection = sync.Map{}

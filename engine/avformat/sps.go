@@ -3,7 +3,7 @@ package avformat
 import (
 	"bytes"
 
-	"github.com/micro-community/stream/engine/util/bits"
+	"github.com/micro-community/stream/util/bits"
 )
 
 //SPSInfore

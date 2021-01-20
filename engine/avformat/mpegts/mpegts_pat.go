@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/micro-community/stream/engine/util"
+	"github.com/micro-community/stream/util"
 )
 
 // ios13818-1-CN.pdf 43(57)/166
