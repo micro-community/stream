@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
-	engine "github.com/micro-community/stream/engine"
+	"github.com/micro-community/stream/engine"
 	"github.com/micro-community/stream/engine/avformat"
-	. "github.com/micro-community/stream/service/rtp"
+	"github.com/micro-community/stream/service/rtp"
 	"github.com/pion/rtcp"
-	. "github.com/pion/webrtc/v2"
+	"github.com/pion/webrtc/v2"
 	"github.com/pion/webrtc/v2/pkg/media"
 )
 
@@ -57,14 +57,14 @@ func init() {
 }
 
 type WebRTC struct {
-	RTP
-	*PeerConnection
+	rtp.RTP
+	*webrtc.PeerConnection
 	RemoteAddr string
-	audioTrack *Track
-	videoTrack *Track
-	m          MediaEngine
-	s          SettingEngine
-	api        *API
+	audioTrack *webrtc.Track
+	videoTrack *webrtc.Track
+	m          webrtc.MediaEngine
+	s          webrtc.SettingEngine
+	api        *webrtc.API
 	payloader  avformat.H264
 	// codecs.H264Packet
 	// *os.File
@@ -106,13 +106,13 @@ func (rtc *WebRTC) Play(streamPath string) bool {
 		return nil
 	}
 	// go sub.Subscribe(streamPath)
-	rtc.OnICEConnectionStateChange(func(connectionState ICEConnectionState) {
+	rtc.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
 		engine.Printf("%s Connection State has changed %s ", streamPath, connectionState.String())
 		switch connectionState {
-		case ICEConnectionStateDisconnected:
+		case webrtc.ICEConnectionStateDisconnected:
 			sub.Close()
 			rtc.Close()
-		case ICEConnectionStateConnected:
+		case webrtc.ICEConnectionStateConnected:
 
 			//rtc.videoTrack = rtc.GetSenders()[0].Track()
 			_ = sub.Subscribe(streamPath)
@@ -121,23 +121,23 @@ func (rtc *WebRTC) Play(streamPath string) bool {
 	return true
 }
 func (rtc *WebRTC) Publish(streamPath string) bool {
-	rtc.m.RegisterCodec(NewRTPCodec(RTPCodecTypeVideo,
-		H264,
+	rtc.m.RegisterCodec(webrtc.NewRTPCodec(webrtc.RTPCodecTypeVideo,
+		webrtc.H264,
 		90000,
 		0,
 		"level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f",
-		DefaultPayloadTypeH264,
+		webrtc.DefaultPayloadTypeH264,
 		new(avformat.H264)))
 	//m.RegisterCodec(NewRTPPCMUCodec(DefaultPayloadTypePCMU, 8000))
 	if !strings.HasPrefix(rtc.RemoteAddr, "127.0.0.1") && !strings.HasPrefix(rtc.RemoteAddr, "[::1]") {
-		rtc.s.SetNAT1To1IPs(config.PublicIP, ICECandidateTypeHost)
+		rtc.s.SetNAT1To1IPs(config.PublicIP, webrtc.ICECandidateTypeHost)
 	}
 	if config.PortMin > 0 && config.PortMax > 0 {
 		_ = rtc.s.SetEphemeralUDPPortRange(config.PortMin, config.PortMax)
 	}
-	rtc.api = NewAPI(WithMediaEngine(rtc.m), WithSettingEngine(rtc.s))
-	peerConnection, err := rtc.api.NewPeerConnection(Configuration{
-		ICEServers: []ICEServer{
+	rtc.api = webrtc.NewAPI(webrtc.WithMediaEngine(rtc.m), webrtc.WithSettingEngine(rtc.s))
+	peerConnection, err := rtc.api.NewPeerConnection(webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{
 			{
 				URLs: config.ICEServers,
 			},
@@ -147,7 +147,7 @@ func (rtc *WebRTC) Publish(streamPath string) bool {
 		engine.Println(err)
 		return false
 	}
-	if _, err = peerConnection.AddTransceiverFromKind(RTPCodecTypeVideo); err != nil {
+	if _, err = peerConnection.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo); err != nil {
 		if err != nil {
 			engine.Println(err)
 			return false
@@ -156,10 +156,10 @@ func (rtc *WebRTC) Publish(streamPath string) bool {
 	if err != nil {
 		return false
 	}
-	peerConnection.OnICEConnectionStateChange(func(connectionState ICEConnectionState) {
+	peerConnection.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
 		engine.Printf("%s Connection State has changed %s ", streamPath, connectionState.String())
 		switch connectionState {
-		case ICEConnectionStateDisconnected, ICEConnectionStateFailed:
+		case webrtc.ICEConnectionStateDisconnected, webrtc.ICEConnectionStateFailed:
 			if rtc.Stream != nil {
 				rtc.Stream.Close()
 			}
@@ -169,7 +169,7 @@ func (rtc *WebRTC) Publish(streamPath string) bool {
 	if rtc.RTP.Publish(streamPath) {
 		//f, _ := os.OpenFile("resource/live/rtc.h264", os.O_TRUNC|os.O_WRONLY, 0666)
 		rtc.Stream.Type = "WebRTC"
-		peerConnection.OnTrack(func(track *Track, receiver *RTPReceiver) {
+		peerConnection.OnTrack(func(track *webrtc.Track, receiver *webrtc.RTPReceiver) {
 			defer rtc.Stream.Close()
 			go func() {
 				ticker := time.NewTicker(time.Second * 2)
@@ -182,8 +182,8 @@ func (rtc *WebRTC) Publish(streamPath string) bool {
 					return
 				}
 			}()
-			pack := &RTPPack{
-				Type: RTPType(track.Kind() - 1),
+			pack := &rtp.RTPPack{
+				Type: rtp.RTPType(track.Kind() - 1),
 			}
 			for b := make([]byte, 1460); ; rtc.PushPack(pack) {
 				i, err := track.Read(b)
@@ -232,7 +232,7 @@ func run() {
 
 		w.Header().Set("Content-Type", "application/json")
 		streamPath := r.URL.Query().Get("streamPath")
-		var offer SessionDescription
+		var offer webrtc.SessionDescription
 		var rtc WebRTC
 
 		bytes, err := ioutil.ReadAll(r.Body)
@@ -259,23 +259,23 @@ func run() {
 		if !strings.Contains(offer.SDP, pli) {
 			pli = reg_level.FindAllStringSubmatch(offer.SDP, -1)[0][1]
 		}
-		rtc.m.RegisterCodec(NewRTPCodec(RTPCodecTypeVideo,
-			H264,
+		rtc.m.RegisterCodec(webrtc.NewRTPCodec(webrtc.RTPCodecTypeVideo,
+			webrtc.H264,
 			90000,
 			0,
 			"level-asymmetry-allowed=1;packetization-mode=1;profile-level-id="+pli,
-			DefaultPayloadTypeH264,
+			webrtc.DefaultPayloadTypeH264,
 			&rtc.payloader))
-		rtc.m.RegisterCodec(NewRTPPCMACodec(DefaultPayloadTypePCMA, 8000))
+		rtc.m.RegisterCodec(webrtc.NewRTPPCMACodec(webrtc.DefaultPayloadTypePCMA, 8000))
 		if !strings.HasPrefix(r.RemoteAddr, "127.0.0.1") && !strings.HasPrefix(r.RemoteAddr, "[::1]") {
-			rtc.s.SetNAT1To1IPs(config.PublicIP, ICECandidateTypeHost)
+			rtc.s.SetNAT1To1IPs(config.PublicIP, webrtc.ICECandidateTypeHost)
 		}
 		if config.PortMin > 0 && config.PortMax > 0 {
 			_ = rtc.s.SetEphemeralUDPPortRange(config.PortMin, config.PortMax)
 		}
-		rtc.api = NewAPI(WithMediaEngine(rtc.m), WithSettingEngine(rtc.s))
+		rtc.api = webrtc.NewAPI(webrtc.WithMediaEngine(rtc.m), webrtc.WithSettingEngine(rtc.s))
 
-		if rtc.PeerConnection, err = rtc.api.NewPeerConnection(Configuration{
+		if rtc.PeerConnection, err = rtc.api.NewPeerConnection(webrtc.Configuration{
 			// ICEServers: []ICEServer{
 			// 	{
 			// 		URLs: config.ICEServers,
@@ -284,7 +284,7 @@ func run() {
 		}); err != nil {
 			return
 		}
-		rtc.OnICECandidate(func(ice *ICECandidate) {
+		rtc.OnICECandidate(func(ice *webrtc.ICECandidate) {
 			if ice != nil {
 				engine.Println(ice.ToJSON().Candidate)
 			}
@@ -295,10 +295,10 @@ func run() {
 			return
 		}
 
-		if rtc.videoTrack, err = rtc.NewTrack(DefaultPayloadTypeH264, 8, "video", "monibuca"); err != nil {
+		if rtc.videoTrack, err = rtc.NewTrack(webrtc.DefaultPayloadTypeH264, 8, "video", "monibuca"); err != nil {
 			return
 		}
-		if rtc.audioTrack, err = rtc.NewTrack(DefaultPayloadTypePCMA, 9, "audio", "monibuca"); err != nil {
+		if rtc.audioTrack, err = rtc.NewTrack(webrtc.DefaultPayloadTypePCMA, 9, "audio", "monibuca"); err != nil {
 			return
 		}
 		if _, err = rtc.AddTrack(rtc.videoTrack); err != nil {
@@ -313,7 +313,7 @@ func run() {
 
 	http.HandleFunc("/webrtc/publish", func(w http.ResponseWriter, r *http.Request) {
 		streamPath := r.URL.Query().Get("streamPath")
-		offer := SessionDescription{}
+		offer := webrtc.SessionDescription{}
 		bytes, err := ioutil.ReadAll(r.Body)
 
 		if err != nil {
