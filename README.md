@@ -17,4 +17,4 @@ a streaming service built on go-micro ecosystem
 
 ## License
 
-GPL-3.0
+MIT
