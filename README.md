@@ -10,7 +10,7 @@ a streaming service built on go-micro ecosystem
 
 ## Inspired By
 
-- [monibuca](https://github.com/micro-community/stream/engine)
+- [monibuca](https://github.com/monibuca/engine)
 - [websocket-streamserver](https://github.com/use-go/websocket-streamserver)
 - [websocket-mse](https://github.com/elsampsa/websocket-mse-demo)
 - [EasyDarwinGo](https://github.com/GB28181/EasyDarwinGo)
