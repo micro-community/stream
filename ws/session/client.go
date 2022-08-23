@@ -3,11 +3,12 @@ package session
 import (
 	"sync"
 
+	"log"
+
 	"github.com/gorilla/websocket"
-	"github.com/micro/go-micro/v2/util/log"
 )
 
-//Client Connection
+// Client Connection
 type Client struct {
 	userID string
 	conns  map[*websocket.Conn]*Connection
@@ -32,24 +33,24 @@ func (c *Client) sendMessage(msg interface{}) {
 	for _, conn := range c.conns {
 		err := conn.WriteJSON(msg)
 		if err != nil {
-			log.Errorf("conn.WriteJSON error:%v", err)
+			log.Printf("conn.WriteJSON error:%v", err)
 		}
 	}
 }
 
-//parameters
+// parameters
 var (
 	clients = make(map[string]*Client)
 	lock    sync.RWMutex
 )
 
-//SendMessage To User..
+// SendMessage To User..
 func SendMessage(msg interface{}, userIDs []string) {
 	lock.RLock()
 	for _, userID := range userIDs {
 		client, exist := clients[userID]
 		if exist {
-			log.Infof("streaming log (data:%s), user(%s)", msg, userID)
+			log.Printf("streaming log (data:%s), user(%s)", msg, userID)
 			client.sendMessage(msg)
 		}
 	}

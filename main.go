@@ -1,14 +1,13 @@
 package main
 
 import (
-	"net/http"
+	"log"
 
-	"github.com/micro-community/stream/ws"
-	log "github.com/micro/go-micro/v2/logger"
-	"github.com/micro/go-micro/v2/web"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
-//Meta Data
+// Meta Data
 var (
 	Name    = "x-streaming"
 	Address = ":8080"
@@ -18,21 +17,22 @@ var (
 func main() {
 
 	//support websocket directly,by go-micro
-	srv := web.NewService(web.Version("v1.0.0"))
+	srv := echo.New()
 
-	srv.Init()
+	// Middleware
+	srv.Use(middleware.Logger())
+	srv.Use(middleware.Recover())
 
 	// static files
-	srv.Handle("/", http.FileServer(http.Dir("html")))
-
+	//srv.Handle("/", http.FileServer(http.Dir("html")))
 	// Handle websocket connection
-	srv.HandleFunc("/ws", ws.HandleConn)
+	//srv.HandleFunc("/ws", ws.HandleConn)
 
 	//toy code ,will be changed.
 	go Run("config.toml")
 
 	// Run service
-	if err := srv.Run(); err != nil {
+	if err := srv.Start(Address); err != nil {
 		log.Fatal(err)
 	}
 }
