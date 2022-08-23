@@ -2,9 +2,10 @@ package main
 
 import (
 	"log"
+	"net/http"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/micro-community/stream/ws"
+	"go-micro.dev/v4/web"
 )
 
 // Meta Data
@@ -17,22 +18,18 @@ var (
 func main() {
 
 	//support websocket directly,by go-micro
-	srv := echo.New()
-
-	// Middleware
-	srv.Use(middleware.Logger())
-	srv.Use(middleware.Recover())
+	srv := web.NewService(web.Name("stream"))
 
 	// static files
-	//srv.Handle("/", http.FileServer(http.Dir("html")))
+	srv.Handle("/", http.FileServer(http.Dir("html")))
 	// Handle websocket connection
-	//srv.HandleFunc("/ws", ws.HandleConn)
+	srv.HandleFunc("/ws", ws.HandleConn)
 
 	//toy code ,will be changed.
 	go Run("config.toml")
 
 	// Run service
-	if err := srv.Start(Address); err != nil {
+	if err := srv.Run(); err != nil {
 		log.Fatal(err)
 	}
 }

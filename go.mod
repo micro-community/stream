@@ -12,7 +12,6 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mask-pp/rtp-ps v1.0.0
 	github.com/mattn/go-colorable v0.1.13
-	github.com/micro/go-micro/v2 v2.9.1
 	github.com/pion/rtcp v1.2.10
 	github.com/pion/rtp v1.7.13
 	github.com/pion/webrtc/v2 v2.2.26
@@ -20,5 +19,6 @@ require (
 	github.com/shirou/gopsutil v2.21.11+incompatible
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
+	go-micro.dev/v4 v4.8.1 // indirect
 
 )

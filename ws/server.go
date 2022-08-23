@@ -2,10 +2,10 @@ package ws
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/micro/go-micro/v2/util/log"
+	"go-micro.dev/v4/util/log"
 )
 
-//ServeStream Server Stream fo websocket
+// ServeStream Server Stream fo websocket
 func serveStream(ws *websocket.Conn) error {
 
 	// Even if we aren't expecting further requests from the websocket, we still need to read from it to ensure we

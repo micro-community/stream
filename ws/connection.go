@@ -5,14 +5,14 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/micro-community/stream/ws/session"
-	"github.com/micro/go-micro/v2/util/log"
+	"go-micro.dev/v4/util/log"
 )
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-//verifyAuth token from head
+// verifyAuth token from head
 func verifyAuth(tokenStr string) (string, error) {
 	//	log.Info(token,check)
 	// todo ..
@@ -21,7 +21,7 @@ func verifyAuth(tokenStr string) (string, error) {
 	return "userID", nil
 }
 
-//HandleConn of websocket
+// HandleConn of websocket
 func HandleConn(w http.ResponseWriter, r *http.Request) {
 	// Upgrade request to websocket
 	conn, err := upgrader.Upgrade(w, r, nil)

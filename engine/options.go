@@ -3,7 +3,7 @@ package engine
 import (
 	"context"
 
-	"github.com/micro/go-micro/v2/config"
+	"go-micro.dev/v4/config"
 )
 
 // Options for micro service
