@@ -1,6 +1,8 @@
 package app
 
-import "time"
+import (
+	"time"
+)
 
 // Parameters for engine
 type Parameters struct {
@@ -26,9 +28,27 @@ var (
 	ConfigRaw []byte
 	// Version 引擎版本号
 	Version string
-	// EngineInfo 引擎信息
-	EngineInfo = &ExtendInfo{&Version, time.Now(), Config}
+	// AppInfo 引擎信息
+	AppInfo = &ExtendInfo{&Version, time.Now(), Config}
 )
 
 type Configuration struct {
+	Params Parameters
+	global struct {
+		console struct {
+			secrets string
+		}
+	}
+
+	webrtc struct {
+		enable bool
+	}
+
+	rtsp struct {
+		enable bool
+		pull   struct {
+			pullstart bool
+			pulllist  map[string]string
+		}
+	}
 }

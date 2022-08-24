@@ -5,8 +5,8 @@ global:
     secret: "ab0f6913670062af4d2f15c62120517c"
   # http:
   #   listenaddrtls: :8081
-  #   certfile: monibuca.com.pem
-  #   keyfile: monibuca.com.key
+  #   certfile: somesite.pem
+  #   keyfile: somesite.key
 webtransport:
   enable: false
 rtsp:

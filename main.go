@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/micro-community/stream/app"
 	"github.com/micro-community/stream/util"
 	"github.com/micro-community/stream/ws"
 	"github.com/urfave/cli/v2"
@@ -16,7 +17,6 @@ import (
 var (
 	Name    = "x-streaming"
 	Address = ":8080"
-	Version = "1.0.0"
 )
 
 // this is still a toy code block
@@ -37,7 +37,7 @@ func main() {
 	)
 
 	s.Init(micro.Action(func(c *cli.Context) error {
-		Version = c.String("version")
+		app.Version = c.String("version")
 		return nil
 	}))
 
