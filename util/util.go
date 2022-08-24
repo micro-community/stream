@@ -2,10 +2,13 @@ package util
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
+	"syscall"
 )
 
 // Exist check file or dir exist
@@ -14,7 +17,7 @@ func Exist(filename string) bool {
 	return err == nil || os.IsExist(err)
 }
 
-//ReadFileLines read by line
+// ReadFileLines read by line
 func ReadFileLines(filename string) (lines []string, err error) {
 	file, err := os.OpenFile(filename, os.O_RDONLY, 0644)
 	if err != nil {
@@ -40,11 +43,19 @@ func ReadFileLines(filename string) (lines []string, err error) {
 
 }
 
-//CurrentDir for working directory
+// CurrentDir for working directory
 func CurrentDir(path ...string) string {
 	_, currentFilePath, _, _ := runtime.Caller(1)
 	if len(path) == 0 {
 		return filepath.Dir(currentFilePath)
 	}
 	return filepath.Join(filepath.Dir(currentFilePath), filepath.Join(path...))
+}
+
+func WaitTerm(cancel context.CancelFunc) {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sig)
+	<-sig
+	cancel()
 }

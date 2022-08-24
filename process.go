@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"go-micro.dev/v4/util/log"
 
 	// colorable
 	"github.com/BurntSushi/toml"
@@ -15,7 +17,7 @@ import (
 )
 
 // Run engine
-func Run(configFile string) (err error) {
+func Run(ctx context.Context, configFile string) (err error) {
 
 	_, enginePath, _, _ := runtime.Caller(0)
 	if parts := strings.Split(filepath.Dir(enginePath), "@"); len(parts) > 1 {
@@ -32,14 +34,14 @@ func Run(configFile string) (err error) {
 		if cfg, ok := cg["Monibuca"]; ok {
 			b, _ := json.Marshal(cfg)
 			if err = json.Unmarshal(b, engine.Config); err != nil {
-				log.Println(err)
+				log.Error(err)
 			}
 		}
 		for name, config := range engine.Plugins {
 			if cfg, ok := cg[name]; ok {
 				b, _ := json.Marshal(cfg)
 				if err = json.Unmarshal(b, config.Config); err != nil {
-					log.Println(err)
+					log.Error(err)
 					continue
 				}
 			} else if config.Config != nil {
