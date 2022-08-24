@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"path/filepath"
@@ -41,20 +40,20 @@ func Run(ctx context.Context, configFile string) (err error) {
 
 	go engine.Summary.StartSummary()
 
-	var pluginConfigs map[string]interface{}
-	for name, config := range engine.Plugins {
-		if cfg, ok := pluginConfigs[name]; ok {
-			b, _ := json.Marshal(cfg)
-			if err = json.Unmarshal(b, config.Config); err != nil {
-				log.Error(err)
-				continue
-			}
-		} else if config.Config != nil {
-			continue
-		}
-		if config.Run != nil {
-			go config.Run()
-		}
-	}
+	// var pluginConfigs map[string]interface{}
+	// for name, config := range app.Plugins {
+	// 	if cfg, ok := pluginConfigs[name]; ok {
+	// 		b, _ := json.Marshal(cfg)
+	// 		if err = json.Unmarshal(b, app.config.Config); err != nil {
+	// 			log.Error(err)
+	// 			continue
+	// 		}
+	// 	} else if config.Config != nil {
+	// 		continue
+	// 	}
+	// 	if config.Run != nil {
+	// 		go config.Run()
+	// 	}
+	// }
 	return
 }

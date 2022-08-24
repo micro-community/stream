@@ -50,7 +50,7 @@ func main() {
 
 	srv.Init()
 
-	ctx, cancel := context.WithCancel(context.WithValue(context.Background(), "version", "1.0"))
+	ctx, cancel := context.WithCancel(context.WithValue(context.Background(), "version", app.Version))
 	go util.WaitTerm(cancel)
 	//toy code ,will be changed.
 	go Run(ctx, "config.yaml")
