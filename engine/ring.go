@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/micro-community/stream/app"
 	"github.com/micro-community/stream/engine/avformat"
 )
 
@@ -100,5 +101,5 @@ func (r Ring) Clone() *Ring {
 
 // Timeout 发布者是否超时了
 func (r *Ring) Timeout() bool {
-	return time.Since(r.UpdateTime) > Config.PublishTimeout
+	return time.Since(r.UpdateTime) > app.Config.PublishTimeout
 }

@@ -47,7 +47,7 @@ type NetWorkInfo struct {
 	SentSpeed    uint64
 }
 
-//StartSummary 开始定时采集数据，每秒一次
+// StartSummary 开始定时采集数据，每秒一次
 func (s *ServerSummary) StartSummary() {
 	ticker := time.NewTicker(time.Second)
 	s.control = make(chan bool)

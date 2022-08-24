@@ -1,8 +1,8 @@
-package engine
+package app
 
 import "time"
 
-//Parameters for engine
+// Parameters for engine
 type Parameters struct {
 	EnableWaitStream bool
 	RingSize         int
@@ -11,14 +11,14 @@ type Parameters struct {
 	PublishTimeout   time.Duration
 }
 
-//ExtendInfo for extension
+// ExtendInfo for extension
 type ExtendInfo struct {
 	Version   *string
 	StartTime time.Time //启动时间
 	Params    *Parameters
 }
 
-//Settings for engine
+// Settings for engine
 var (
 	Config = &Parameters{true, 10, false, true, time.Minute}
 
@@ -29,3 +29,6 @@ var (
 	// EngineInfo 引擎信息
 	EngineInfo = &ExtendInfo{&Version, time.Now(), Config}
 )
+
+type Configuration struct {
+}

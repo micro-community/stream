@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/micro-community/stream/app"
 	"github.com/micro-community/stream/engine/avformat"
 	"github.com/pkg/errors"
 )
@@ -45,9 +46,9 @@ func (s *Subscriber) Close() {
 	}
 }
 
-//Subscribe 开始订阅
+// Subscribe 开始订阅
 func (s *Subscriber) Subscribe(streamPath string) (err error) {
-	if !Config.EnableWaitStream && FindStream(streamPath) == nil {
+	if !app.Config.EnableWaitStream && FindStream(streamPath) == nil {
 		return errors.Errorf("Stream not found:%s", streamPath)
 	}
 	GetStream(streamPath).Subscribe(s)

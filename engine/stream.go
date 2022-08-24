@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/logrusorgru/aurora"
+	"github.com/micro-community/stream/app"
 	"github.com/micro-community/stream/engine/avformat"
 )
 
@@ -19,7 +20,7 @@ type Collection struct {
 	sync.Map
 }
 
-//FindStream 根据流路径查找流
+// FindStream 根据流路径查找流
 func FindStream(streamPath string) *Stream {
 	if s, ok := streamCollection.Load(streamPath); ok {
 		return s.(*Stream)
@@ -27,19 +28,19 @@ func FindStream(streamPath string) *Stream {
 	return nil
 }
 
-//GetStream 根据流路径获取流，如果不存在则创建一个新的
+// GetStream 根据流路径获取流，如果不存在则创建一个新的
 func GetStream(streamPath string) (result *Stream) {
 	item, loaded := streamCollection.LoadOrStore(streamPath, &Stream{
 		Subscribers: make(map[string]*Subscriber),
 		Control:     make(chan interface{}),
-		AVRing:      NewRing(Config.RingSize),
+		AVRing:      NewRing(app.Config.RingSize),
 		StreamInfo: StreamInfo{
 			StreamPath:     streamPath,
 			SubscriberInfo: make([]*SubscriberInfo, 0),
 			HasVideo:       true,
 			HasAudio:       true,
-			EnableAudio:    &Config.EnableAudio,
-			EnableVideo:    &Config.EnableVideo,
+			EnableAudio:    &app.Config.EnableAudio,
+			EnableVideo:    &app.Config.EnableVideo,
 		},
 		WaitPub: make(chan struct{}),
 	})
@@ -47,10 +48,10 @@ func GetStream(streamPath string) (result *Stream) {
 	if !loaded {
 		Summary.Streams = append(Summary.Streams, &result.StreamInfo)
 		result.Context, result.Cancel = context.WithCancel(context.Background())
-		if Config.EnableVideo {
+		if app.Config.EnableVideo {
 			result.EnableVideo = &result.HasVideo
 		}
-		if Config.EnableAudio {
+		if app.Config.EnableAudio {
 			result.EnableAudio = &result.HasAudio
 		}
 		go result.Run()
@@ -133,7 +134,7 @@ func (r *Stream) onClosed() {
 	OnStreamClosedHooks.Trigger(r)
 }
 
-//Subscribe 订阅流
+// Subscribe 订阅流
 func (r *Stream) Subscribe(s *Subscriber) {
 	s.Stream = r
 	if r.Err() == nil {
@@ -144,7 +145,7 @@ func (r *Stream) Subscribe(s *Subscriber) {
 	}
 }
 
-//UnSubscribe 取消订阅流
+// UnSubscribe 取消订阅流
 func (r *Stream) UnSubscribe(s *Subscriber) {
 	if r.Err() == nil {
 		r.Control <- &UnSubscribeCmd{s}
