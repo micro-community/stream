@@ -1,5 +1,5 @@
 {
-    "version": "0.1",
+    "version": "0.2",
     "enabledLanguageIds": [
         "go",
         "javascript",
@@ -101,6 +101,7 @@
         "Tracef",
         "tsmerge",
         "upgrader",
+        "urfave",
         "uuid",
         "vals",
         "visualstudio",

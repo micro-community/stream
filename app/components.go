@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"sync"
 
 	"github.com/logrusorgru/aurora"
 	"go-micro.dev/v4/util/log"
@@ -32,8 +33,11 @@ type PluginOptions struct {
 }
 
 type plugin struct {
-	Options PluginOptions
+	Opts PluginOptions
+	once sync.Once
 }
+
+type Option func(*PluginOptions)
 
 // Plugins 所有的插件配置
 var Plugins = make(map[string]Plugin)
@@ -41,14 +45,17 @@ var Plugins = make(map[string]Plugin)
 // InstallPlugin 安装插件
 func InstallPlugin(p PluginOptions) Plugin {
 
+	//创建组件
 	plug := &plugin{
-		Options: PluginOptions{
+		Opts: PluginOptions{
 			Name:    "name",
 			Version: "version",
 		},
+		once: sync.Once{},
 	}
 
-	log.Info(aurora.Green("install plugin"), aurora.BrightCyan(plug.Options.Name), aurora.BrightBlue(plug.Options.Version))
+	//初始化组件
+	log.Info(aurora.Green("install plugin"), aurora.BrightCyan(plug.Opts.Name), aurora.BrightBlue(plug.Opts.Version))
 
 	return plug
 }
