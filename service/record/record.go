@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/micro-community/stream/app"
 	"github.com/micro-community/stream/engine"
-
 	"github.com/micro-community/stream/util"
 )
 
@@ -20,7 +20,7 @@ var config = struct {
 }{}
 var recordings = sync.Map{}
 
-//FlvFileInfo for flv record
+// FlvFileInfo for flv record
 type FlvFileInfo struct {
 	Path     string
 	Size     int64
@@ -28,11 +28,8 @@ type FlvFileInfo struct {
 }
 
 func init() {
-	engine.InstallPlugin(&engine.PluginConfig{
-		Name:   "Record",
-		Type:   engine.PLUGIN_SUBSCRIBER,
-		Config: &config,
-		Run:    run,
+	app.InstallPlugin(app.PluginOptions{
+		Name: "Record",
 	})
 }
 func run() {

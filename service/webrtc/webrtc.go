@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/micro-community/stream/app"
 	"github.com/micro-community/stream/engine"
 	"github.com/micro-community/stream/engine/avformat"
 	"github.com/micro-community/stream/service/rtp"
@@ -25,7 +26,7 @@ var config struct {
 	PortMax    uint16
 }
 
-//var playWaitList WaitList
+// var playWaitList WaitList
 var reg_level = regexp.MustCompile("profile-level-id=(4.+f)")
 
 type WaitList struct {
@@ -48,11 +49,8 @@ func (wl *WaitList) Get(k string) *WebRTC {
 	return wl.m[k]
 }
 func init() {
-	engine.InstallPlugin(&engine.PluginConfig{
-		Config: &config,
-		Name:   "WebRTC",
-		Type:   engine.PLUGIN_PUBLISHER | engine.PLUGIN_SUBSCRIBER,
-		Run:    run,
+	app.InstallPlugin(app.PluginOptions{
+		Name: "WebRTC",
 	})
 }
 

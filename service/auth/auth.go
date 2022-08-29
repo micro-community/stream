@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/micro-community/stream/app"
 	"github.com/micro-community/stream/engine"
 )
 
@@ -21,11 +22,8 @@ var (
 )
 
 func init() {
-	engine.InstallPlugin(&engine.PluginConfig{
-		Name:   "Auth",
-		Type:   engine.PLUGIN_HOOK,
-		Config: &config,
-		Run:    ClearSignCache,
+	app.InstallPlugin(app.PluginOptions{
+		Name: "Auth",
 	})
 }
 

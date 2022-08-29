@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/micro-community/stream/app"
 	"github.com/micro-community/stream/engine"
 	"github.com/micro-community/stream/engine/avformat"
 	"github.com/micro-community/stream/engine/avformat/mpegts"
@@ -24,25 +25,8 @@ var config = struct {
 }{2048, "ts", true}
 
 func init() {
-	engine.InstallPlugin(&engine.PluginConfig{
-		Name:   "TS",
-		Type:   engine.PLUGIN_PUBLISHER,
-		Config: &config,
-		HotConfig: map[string]func(interface{}){
-			"AutoPublish": func(value interface{}) {
-				config.AutoPublish = value.(bool)
-			},
-		},
-		Run: func() {
-			engine.OnSubscribeHooks.AddHook(func(s *engine.Subscriber) {
-				if config.AutoPublish && s.Publisher == nil {
-					go new(TS).PublishDir(s.StreamPath)
-				}
-			})
-
-			http.HandleFunc("/ts/list", listTsDir)
-			http.HandleFunc("/ts/publish", publishTsDir)
-		},
+	app.InstallPlugin(app.PluginOptions{
+		Name: "ts",
 	})
 }
 

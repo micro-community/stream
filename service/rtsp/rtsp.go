@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/micro-community/stream/app"
 	"github.com/micro-community/stream/engine"
 	"github.com/micro-community/stream/engine/avformat"
 	"github.com/micro-community/stream/util"
@@ -22,17 +23,8 @@ var config = struct {
 }{2048, true, "rtsp://localhost/${streamPath}"}
 
 func init() {
-	engine.InstallPlugin(&engine.PluginConfig{
-		Name:    "RTSP",
-		Type:    engine.PLUGIN_PUBLISHER | engine.PLUGIN_HOOK,
-		Version: "1.0.0",
-		Config:  &config,
-		Run:     runPlugin,
-		HotConfig: map[string]func(interface{}){
-			"AutoPull": func(value interface{}) {
-				config.AutoPull = value.(bool)
-			},
-		},
+	app.InstallPlugin(app.PluginOptions{
+		Name: "rtsp",
 	})
 }
 func runPlugin() {
@@ -191,7 +183,7 @@ func (rtsp *RTSP) run() {
 	}
 }
 
-//Publish a rtsp stream
+// Publish a rtsp stream
 func (rtsp *RTSP) Publish(streamPath string, rtspUrl string) (result bool) {
 	if result = rtsp.Publisher.Publish(streamPath); result {
 		rtsp.Type = "RTSP"
