@@ -19,7 +19,6 @@ import (
 
 // Run process
 func Run(ctx context.Context, configFile string) (err error) {
-
 	_, enginePath, _, _ := runtime.Caller(0)
 	if parts := strings.Split(filepath.Dir(enginePath), "@"); len(parts) > 1 {
 		app.Version = parts[len(parts)-1]
@@ -55,5 +54,11 @@ func Run(ctx context.Context, configFile string) (err error) {
 	// 		go config.Run()
 	// 	}
 	// }
-	return
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		}
+
+	}
 }

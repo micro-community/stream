@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"net/http"
 	"sync"
 
 	"github.com/logrusorgru/aurora"
 	"go-micro.dev/v4/util/log"
+	"github.com/micro-community/stream/pubsub"
 )
 
 // Plugin Manager
@@ -16,6 +18,11 @@ const (
 	PLUGIN_HOOK       = 1 << 2 //钩子插件
 	PLUGIN_APP        = 1 << 3 //应用插件
 )
+
+// ListenerConfig 带有监听地址端口的插件配置类型
+type ListenerConfig struct {
+	ListenAddr string
+}
 
 type Plugin interface {
 	// 可能的入参类型：FirstConfig 第一次初始化配置，Config 后续配置更新，SE系列（StateEvent）流状态变化事件
@@ -60,11 +67,23 @@ func InstallPlugin(p PluginOptions) Plugin {
 	return plug
 }
 
-func (p plugin) OnEvent(any) {
+func (p *plugin) OnEvent(any) {
 
 }
 
-// ListenerConfig 带有监听地址端口的插件配置类型
-type ListenerConfig struct {
-	ListenAddr string
+func (p *plugin) handleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+
+}
+
+// run plugin
+func (p *plugin) run() {
+
+}
+
+func (p *plugin) Update(opts PluginOptions) {
+
+}
+
+func (p *plugin) Push(strempath string,url string pusher pubsub.IPusher save bool) {
+
 }
