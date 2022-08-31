@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/micro-community/stream/app"
-	"github.com/micro-community/stream/engine/avformat"
+	"github.com/micro-community/stream/codecs"
 	"github.com/pkg/errors"
 )
 
@@ -26,12 +26,12 @@ type Subscriber struct {
 	*Stream
 	SubscriberInfo
 	MetaData   func(stream *Stream) error
-	OnData     func(*avformat.SendPacket) error
+	OnData     func(*codecs.SendPacket) error
 	Cancel     context.CancelFunc
 	Sign       string
 	OffsetTime uint32
 	startTime  uint32
-	avformat.SendPacket
+	codecs.SendPacket
 }
 
 // IsClosed 检查订阅者是否已经关闭
@@ -79,7 +79,7 @@ func (s *Subscriber) Subscribe(streamPath string) (err error) {
 		for atsent, dropping, droped := s.AudioTag == nil, false, 0; s.Err() == nil; packet.NextR() {
 			s.TotalPacket++
 			if !dropping {
-				if !atsent && packet.Type == avformat.FLV_TAG_TYPE_AUDIO {
+				if !atsent && packet.Type == codecs.FLV_TAG_TYPE_AUDIO {
 					s.sendAv(s.AudioTag, 0)
 					atsent = true
 				}
@@ -113,7 +113,7 @@ func (s *Subscriber) Subscribe(streamPath string) (err error) {
 	return s.Err()
 }
 
-func (s *Subscriber) sendAv(packet *avformat.AVPacket, t uint32) {
+func (s *Subscriber) sendAv(packet *codecs.AVPacket, t uint32) {
 	s.AVPacket = packet
 	s.Timestamp = t
 	if s.OnData(&s.SendPacket) != nil {

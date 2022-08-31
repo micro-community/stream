@@ -1,4 +1,4 @@
-package avformat
+package codecs
 
 import (
 	"io"

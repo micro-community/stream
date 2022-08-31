@@ -1,4 +1,4 @@
-package avformat
+package codecs
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"github.com/micro-community/stream/util/bits"
 )
 
-//SPSInfore
+// SPSInfore
 type SPSInfo struct {
 	ProfileIdc uint
 	LevelIdc   uint

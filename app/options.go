@@ -69,6 +69,13 @@ type WebOption struct {
 	mux           *http.ServeMux
 }
 
+// PushOption for push stream
+type PushOption struct {
+	RePush   int               // 断开后自动重推,0 表示不自动重推，-1 表示无限重推，高于0 的数代表最大重推次数
+	PushList map[string]string // 自动推流列表
+}
+
+// PullOption for pull stream
 type PullOption struct {
 	RePull          int               // 断开后自动重拉,0 表示不自动重拉，-1 表示无限重拉，高于0 的数代表最大重拉次数
 	PullOnStart     bool              // 启动时拉流

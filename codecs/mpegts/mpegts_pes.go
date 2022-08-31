@@ -7,7 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/micro-community/stream/engine/avformat"
+	"github.com/micro-community/stream/codecs"
 	"github.com/micro-community/stream/util"
 )
 
@@ -580,10 +580,10 @@ func IowWritePESPacket(w io.Writer, tsHeader MpegTsHeader, packet MpegTsPESPacke
 
 func CheckPESPacketIsKeyFrame(packet MpegTsPESPacket) bool {
 
-	nalus := bytes.SplitN(packet.Payload, avformat.NALU_Delimiter1, -1)
+	nalus := bytes.SplitN(packet.Payload, codecs.NALU_Delimiter1, -1)
 
 	for _, v := range nalus {
-		if v[0]&0x1f == avformat.NALU_IDR_Picture {
+		if v[0]&0x1f == codecs.NALU_IDR_Picture {
 			return true
 		}
 	}

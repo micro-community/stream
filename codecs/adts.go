@@ -1,4 +1,4 @@
-package avformat
+package codecs
 
 import (
 	"errors"
@@ -32,34 +32,34 @@ type AVCDecoderConfigurationRecord struct {
 	PictureParameterSetNALUnit  []byte // n byte  PPS
 }
 
-//func (p *AVCDecoderConfigurationRecord) Marshal(b []byte) (n int) {
-//	b[0] = 1
-//	b[1] = p.AVCProfileIndication
-//	b[2] = p.ProfileCompatibility
-//	b[3] = p.AVCLevelIndication
-//	b[4] = p.LengthSizeMinusOne | 0xfc
-//	b[5] = uint8(len(p.SPS)) | 0xe0
-//	n += 6
+//	func (p *AVCDecoderConfigurationRecord) Marshal(b []byte) (n int) {
+//		b[0] = 1
+//		b[1] = p.AVCProfileIndication
+//		b[2] = p.ProfileCompatibility
+//		b[3] = p.AVCLevelIndication
+//		b[4] = p.LengthSizeMinusOne | 0xfc
+//		b[5] = uint8(len(p.SPS)) | 0xe0
+//		n += 6
 //
-//	for _, sps := range p.SPS {
-//		pio.PutU16BE(b[n:], uint16(len(sps)))
-//		n += 2
-//		copy(b[n:], sps)
-//		n += len(sps)
+//		for _, sps := range p.SPS {
+//			pio.PutU16BE(b[n:], uint16(len(sps)))
+//			n += 2
+//			copy(b[n:], sps)
+//			n += len(sps)
+//		}
+//
+//		b[n] = uint8(len(p.PPS))
+//		n++
+//
+//		for _, pps := range p.PPS {
+//			pio.PutU16BE(b[n:], uint16(len(pps)))
+//			n += 2
+//			copy(b[n:], pps)
+//			n += len(pps)
+//		}
+//
+//		return
 //	}
-//
-//	b[n] = uint8(len(p.PPS))
-//	n++
-//
-//	for _, pps := range p.PPS {
-//		pio.PutU16BE(b[n:], uint16(len(pps)))
-//		n += 2
-//		copy(b[n:], pps)
-//		n += len(pps)
-//	}
-//
-//	return
-//}
 var ErrDecconfInvalid = errors.New("decode error")
 
 func (p *AVCDecoderConfigurationRecord) Unmarshal(b []byte) (n int, err error) {
@@ -149,7 +149,7 @@ type GASpecificConfig struct {
 
 // ISO/IEC 13838-7 20(25)/page
 //
-// Advanced Audio Coding
+// # Advanced Audio Coding
 //
 // AudioDataTransportStream
 type ADTS struct {
@@ -188,7 +188,6 @@ type ADTSFixedHeader struct {
 // 1: Low Complexity profile(LC)
 // 2: Scalable Sampling Rate profile(SSR)
 // 3: Reserved
-//
 var SamplingFrequencies = [...]int{96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350, 0, 0, 0}
 
 // Sampling Frequencies[]:

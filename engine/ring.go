@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/micro-community/stream/app"
-	"github.com/micro-community/stream/engine/avformat"
+	"github.com/micro-community/stream/codecs"
 )
 
 type RingItem struct {
-	avformat.AVPacket
+	codecs.AVPacket
 	sync.WaitGroup
 	*bytes.Buffer
 	UpdateTime time.Time

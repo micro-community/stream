@@ -3,7 +3,7 @@ package engine
 import (
 	"encoding/binary"
 
-	"github.com/micro-community/stream/engine/avformat"
+	"github.com/micro-community/stream/codecs"
 )
 
 const (
@@ -46,7 +46,7 @@ func (r *NALU) WriteNALU(ts uint32, payload []byte) {
 	}
 	nalType := payload[0] & naluTypeBitmask
 	switch nalType {
-	case avformat.NALU_STAPA:
+	case codecs.NALU_STAPA:
 		for currOffset, naluSize := stapaHeaderSize, 0; currOffset < len(payload); currOffset += naluSize {
 			naluSize = int(binary.BigEndian.Uint16(payload[currOffset:]))
 			currOffset += stapaNALULengthSize
@@ -56,7 +56,7 @@ func (r *NALU) WriteNALU(ts uint32, payload []byte) {
 			}
 			r.WriteNALU(ts, payload[currOffset:currOffset+naluSize])
 		}
-	case avformat.NALU_FUA:
+	case codecs.NALU_FUA:
 		if len(payload) < fuaHeaderSize {
 			Printf("Payload is not large enough to be FU-A")
 			return
@@ -72,17 +72,17 @@ func (r *NALU) WriteNALU(ts uint32, payload []byte) {
 		if payload[1]&fuaEndBitmask != 0 {
 			r.WriteNALU(ts, r.fuBuffer[fuaHeaderSize-1:])
 		}
-	case avformat.NALU_SPS:
+	case codecs.NALU_SPS:
 		r.WriteSPS(payload)
-	case avformat.NALU_PPS:
+	case codecs.NALU_PPS:
 		r.WritePPS(payload)
-	case avformat.NALU_Access_Unit_Delimiter:
+	case codecs.NALU_Access_Unit_Delimiter:
 
-	case avformat.NALU_IDR_Picture:
-		r.writePicture(ts, avformat.RTMP_KEYFRAME_HEAD, payload)
-	case avformat.NALU_Non_IDR_Picture:
-		r.writePicture(ts, avformat.RTMP_NORMALFRAME_HEAD, payload)
-	case avformat.NALU_SEI:
+	case codecs.NALU_IDR_Picture:
+		r.writePicture(ts, codecs.RTMP_KEYFRAME_HEAD, payload)
+	case codecs.NALU_Non_IDR_Picture:
+		r.writePicture(ts, codecs.RTMP_NORMALFRAME_HEAD, payload)
+	case codecs.NALU_SEI:
 	default:
 		Printf("nalType not support yet:%d", nalType)
 	}

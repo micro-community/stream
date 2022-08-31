@@ -1,4 +1,4 @@
-package avformat
+package codecs
 
 import (
 	"bytes"
@@ -91,7 +91,7 @@ func min(a, b int) int {
 	return b
 }
 
-//Payload 分包，用于RTP传输
+// Payload 分包，用于RTP传输
 func (h264 *H264) Payload(mtu int, payload []byte) (payloads [][]byte) {
 	if payload == nil {
 		return payloads
@@ -183,7 +183,7 @@ type NALUnit struct {
 	RBSP
 }
 
-//NALUHeader for h264
+// NALUHeader for h264
 type NALUHeader struct {
 	forbidden_zero_bit byte // 1 bit  0
 	nal_ref_idc        byte // 2 bits nal_unit_type等于6,9,10,11或12的NAL单元其nal_ref_idc都应等于 0
