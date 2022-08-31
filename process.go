@@ -8,11 +8,10 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/logrusorgru/aurora" // colorable
 	"go-micro.dev/v4/util/log"
 	"gopkg.in/yaml.v3"
 
-	// colorable
-	"github.com/logrusorgru/aurora"
 	"github.com/micro-community/stream/app"
 	"github.com/micro-community/stream/engine"
 )
@@ -39,21 +38,6 @@ func Run(ctx context.Context, configFile string) (err error) {
 
 	go engine.Summary.StartSummary()
 
-	// var pluginConfigs map[string]interface{}
-	// for name, config := range app.Plugins {
-	// 	if cfg, ok := pluginConfigs[name]; ok {
-	// 		b, _ := json.Marshal(cfg)
-	// 		if err = json.Unmarshal(b, app.config.Config); err != nil {
-	// 			log.Error(err)
-	// 			continue
-	// 		}
-	// 	} else if config.Config != nil {
-	// 		continue
-	// 	}
-	// 	if config.Run != nil {
-	// 		go config.Run()
-	// 	}
-	// }
 	for {
 		select {
 		case <-ctx.Done():
