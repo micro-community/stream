@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"path/filepath"
-	"runtime"
+	goRuntime "runtime"
 	"strings"
 
 	"github.com/logrusorgru/aurora" // colorable
@@ -13,12 +13,12 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/micro-community/stream/app"
-	"github.com/micro-community/stream/engine"
+	"github.com/micro-community/stream/runtime"
 )
 
 // Run process
 func Run(ctx context.Context, configFile string) (err error) {
-	_, enginePath, _, _ := runtime.Caller(0)
+	_, enginePath, _, _ := goRuntime.Caller(0)
 	if parts := strings.Split(filepath.Dir(enginePath), "@"); len(parts) > 1 {
 		app.Version = parts[len(parts)-1]
 	}
@@ -36,7 +36,7 @@ func Run(ctx context.Context, configFile string) (err error) {
 
 	log.Info(aurora.Green("start stream server"), aurora.BrightBlue(app.Version))
 
-	go engine.Summary.StartSummary()
+	go runtime.Summary.StartSummary()
 
 	for {
 		select {

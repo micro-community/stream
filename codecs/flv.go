@@ -3,7 +3,7 @@ package codecs
 import (
 	"io"
 
-	"github.com/micro-community/stream/engine/pool"
+	"github.com/micro-community/stream/runtime/pool"
 	"github.com/micro-community/stream/util"
 )
 

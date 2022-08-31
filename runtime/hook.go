@@ -1,4 +1,4 @@
-package engine
+package runtime
 
 var AuthHooks = make(AuthHook, 0)
 

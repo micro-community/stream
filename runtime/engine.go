@@ -1,6 +1,6 @@
-package engine
+package runtime
 
-//Service for monibuca
+// Service for monibuca
 type Service interface {
 	Init() error
 	Run(configFile string) error
