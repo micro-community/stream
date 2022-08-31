@@ -12,6 +12,8 @@ type Options struct {
 	Context context.Context
 }
 
+type Option func(*Options)
+
 func newOptions(opts ...Option) Options {
 	opt := Options{}
 

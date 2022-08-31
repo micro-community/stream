@@ -6,4 +6,3 @@ type Service interface {
 	Run(configFile string) error
 	String() string
 }
-type Option func(*Options)
