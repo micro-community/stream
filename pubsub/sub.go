@@ -15,8 +15,6 @@ type IIO interface {
 type ISubscriber interface {
 	IIO
 	receive(string, IIO) error
-	GetIO()
-	GetConfig()
 	IsPlaying() bool
 	PlayRaw()
 	PlayBlock(byte)

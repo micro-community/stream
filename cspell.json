@@ -110,7 +110,8 @@
         "vals",
         "visualstudio",
         "vsmarketplacebadge",
-        "webrtc"
+        "webrtc",
+        "webrtcv"
     ],
     "flagWords": [
         "hte"

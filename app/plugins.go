@@ -25,14 +25,18 @@ type plugin struct {
 var Plugins = make(map[string]Plugin)
 
 // Install 安装功能组件
-func Install(p PluginOptions) Plugin {
+func Install(opts ...Option) Plugin {
 
+	pluginOptions := PluginOptions{
+		Name:    "DefaultName",
+		Version: "0.0.1",
+	}
+	for _, o := range opts {
+		o(&pluginOptions)
+	}
 	//创建组件
 	plug := &plugin{
-		Opts: PluginOptions{
-			Name:    "name",
-			Version: "version",
-		},
+		Opts: pluginOptions,
 		once: sync.Once{},
 	}
 

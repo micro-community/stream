@@ -12,5 +12,4 @@ type WebRTCSubscriber struct {
 }
 
 func (suber *WebRTCSubscriber) OnEvent(event any) {
-
 }

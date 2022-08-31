@@ -8,60 +8,53 @@ import (
 
 	"github.com/micro-community/stream/app"
 	"github.com/pion/interceptor"
-	"github.com/pion/webrtc/v3"
+	webrtc3 "github.com/pion/webrtc/v3"
 )
 
 var (
 	reg_level = regexp.MustCompile("profile-level-id=(4.+f)")
+	// init web rtc
+	webrtcOptions = app.WebRTCOption{
+		PLI:  time.Second * 2,
+		Name: "WebRTC",
+	}
 )
 
-type WebRTCOption struct {
-	//config.Publish
-	//config.Subscribe
-	ICEServers []string
-	PublicIP   []string
-	PortMin    uint16
-	PortMax    uint16
-	PLI        time.Duration
-	m          webrtc.MediaEngine
-	s          webrtc.SettingEngine
-	api        *webrtc.API
-}
+// install webRTCPulgins
+var webrtcObject = app.Install(app.WithWebRTC(webrtcOptions))
 
-var webrtcOptions = &WebRTCOption{
-	PLI: time.Second * 2,
+// webRTC
+type webrtcPlugin struct {
+	Opts app.WebRTCOption
 }
-
-// install pulgin
-var webrtcObject = app.Install(webrtcOptions)
 
 // TODO....
 type FirstConfig struct{}
 
-func (conf *WebRTCOption) OnEvent(event any) {
+func (wc *webrtcPlugin) OnEvent(event any) {
 	switch event.(type) {
 	case FirstConfig:
-		RegisterCodecs(&conf.m)
+		RegisterCodecs(&wc.Opts.ME)
 		i := &interceptor.Registry{}
-		if len(conf.PublicIP) > 0 {
-			conf.s.SetNAT1To1IPs(conf.PublicIP, webrtc.ICECandidateTypeHost)
+		if len(wc.Opts.PublicIP) > 0 {
+			wc.Opts.SE.SetNAT1To1IPs(wc.Opts.PublicIP, webrtc3.ICECandidateTypeHost)
 		}
-		if conf.PortMin > 0 && conf.PortMax > 0 {
-			conf.s.SetEphemeralUDPPortRange(conf.PortMin, conf.PortMax)
+		if wc.Opts.PortMin > 0 && wc.Opts.PortMax > 0 {
+			wc.Opts.SE.SetEphemeralUDPPortRange(wc.Opts.PortMin, wc.Opts.PortMax)
 		}
-		if len(conf.PublicIP) > 0 {
-			conf.s.SetNAT1To1IPs(conf.PublicIP, webrtc.ICECandidateTypeHost)
+		if len(wc.Opts.PublicIP) > 0 {
+			wc.Opts.SE.SetNAT1To1IPs(wc.Opts.PublicIP, webrtc3.ICECandidateTypeHost)
 		}
-		conf.s.SetNetworkTypes([]webrtc.NetworkType{webrtc.NetworkTypeUDP4, webrtc.NetworkTypeUDP6})
-		if err := webrtc.RegisterDefaultInterceptors(&conf.m, i); err != nil {
+		wc.Opts.SE.SetNetworkTypes([]webrtc3.NetworkType{webrtc3.NetworkTypeUDP4, webrtc3.NetworkTypeUDP6})
+		if err := webrtc3.RegisterDefaultInterceptors(&wc.Opts.ME, i); err != nil {
 			panic(err)
 		}
-		conf.api = webrtc.NewAPI(webrtc.WithMediaEngine(&conf.m),
-			webrtc.WithInterceptorRegistry(i), webrtc.WithSettingEngine(conf.s))
+		wc.Opts.API = webrtc3.NewAPI(webrtc3.WithMediaEngine(&wc.Opts.ME),
+			webrtc3.WithInterceptorRegistry(i), webrtc3.WithSettingEngine(wc.Opts.SE))
 	}
 }
 
-func (conf *WebRTCOption) Play_(w http.ResponseWriter, r *http.Request) {
+func (wc *webrtcPlugin) Play_(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/sdp")
 	streamPath := r.URL.Path[len("/webrtc/play/"):]
 	bytes, err := ioutil.ReadAll(r.Body)
@@ -71,16 +64,16 @@ func (conf *WebRTCOption) Play_(w http.ResponseWriter, r *http.Request) {
 	var suber = WebRTCSubscriber{
 		WebRTCIO: WebRTCIO{SDP: string(bytes)},
 	}
-	if suber.PeerConnection, err = conf.api.NewPeerConnection(webrtc.Configuration{}); err != nil {
+	if suber.PeerConnection, err = wc.Opts.API.NewPeerConnection(webrtc3.Configuration{}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	suber.OnICECandidate(func(ice *webrtc.ICECandidate) {
+	suber.OnICECandidate(func(ice *webrtc3.ICECandidate) {
 		if ice != nil {
 			//	suber.Info(ice.ToJSON().Candidate)
 		}
 	})
-	if err = suber.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeOffer, SDP: suber.SDP}); err != nil {
+	if err = suber.SetRemoteDescription(webrtc3.SessionDescription{Type: webrtc3.SDPTypeOffer, SDP: suber.SDP}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -95,7 +88,7 @@ func (conf *WebRTCOption) Play_(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (conf *WebRTCOption) Push_(w http.ResponseWriter, r *http.Request) {
+func (wc *webrtcPlugin) Push_(w http.ResponseWriter, r *http.Request) {
 	streamPath := r.URL.Path[len("/webrtc/push/"):]
 	w.Header().Set("Content-Type", "application/sdp")
 	bytes, err := ioutil.ReadAll(r.Body)
@@ -103,20 +96,20 @@ func (conf *WebRTCOption) Push_(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var puber = WebRTCPublisher{WebRTCIO: WebRTCIO{SDP: string(bytes)}}
-	if puber.PeerConnection, err = conf.api.NewPeerConnection(webrtc.Configuration{}); err != nil {
+	if puber.PeerConnection, err = wc.Opts.API.NewPeerConnection(webrtc3.Configuration{}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	puber.OnICECandidate(func(ice *webrtc.ICECandidate) {
+	puber.OnICECandidate(func(ice *webrtc3.ICECandidate) {
 		if ice != nil {
 			//puber.Info(ice.ToJSON().Candidate)
 		}
 	})
-	if _, err = puber.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo); err != nil {
+	if _, err = puber.AddTransceiverFromKind(webrtc3.RTPCodecTypeVideo); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if _, err = puber.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio); err != nil {
+	if _, err = puber.AddTransceiverFromKind(webrtc3.RTPCodecTypeAudio); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -124,7 +117,7 @@ func (conf *WebRTCOption) Push_(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := puber.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeOffer, SDP: puber.SDP}); err != nil {
+	if err := puber.SetRemoteDescription(webrtc3.SessionDescription{Type: webrtc3.SDPTypeOffer, SDP: puber.SDP}); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -134,8 +127,4 @@ func (conf *WebRTCOption) Push_(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-}
-
-var webrtcConfig = &WebRTCOption{
-	PLI: time.Second * 2,
 }
