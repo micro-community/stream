@@ -1,15 +1,16 @@
 package webrtc
 
 import (
-	"github.com/pion/webrtc/v3"
+	webrtc3 "github.com/pion/webrtc/v3"
 )
 
 type WebRTCSubscriber struct {
 	//Subscriber
-	WebRTCIO
-	videoTrack *webrtc.TrackLocalStaticRTP
-	audioTrack *webrtc.TrackLocalStaticRTP
+	WebRTCSession
+	videoTrack *webrtc3.TrackLocalStaticRTP
+	audioTrack *webrtc3.TrackLocalStaticRTP
 }
 
-func (suber *WebRTCSubscriber) OnEvent(event any) {
+func (subscriber *WebRTCSubscriber) OnEvent(event any) {
+
 }

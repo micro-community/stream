@@ -1,7 +1,7 @@
 package pubsub
 
-type IPusher interface {
-	ISubscriber
+type IPush interface {
+	Subscribe
 	Push() error
 	Connect() error
 	init(string, string)

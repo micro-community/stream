@@ -16,6 +16,7 @@
         "ahandler",
         "ahttp",
         "arpc",
+        "AVCC",
         "avcsent",
         "avformat",
         "AVRing",

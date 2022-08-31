@@ -4,22 +4,22 @@ import (
 	"github.com/pion/webrtc/v3"
 )
 
-// WebRTCIO will be changed to session
-type WebRTCIO struct {
+// WebRTCSession will be changed to session
+type WebRTCSession struct {
 	*webrtc.PeerConnection
 	SDP string
 }
 
-func (IO *WebRTCIO) GetAnswer() (string, error) {
+func (session *WebRTCSession) GetAnswer() (string, error) {
 	// Sets the LocalDescription, and starts our UDP listeners
-	answer, err := IO.CreateAnswer(nil)
+	answer, err := session.CreateAnswer(nil)
 	if err != nil {
 		return "", err
 	}
-	gatherComplete := webrtc.GatheringCompletePromise(IO.PeerConnection)
-	if err := IO.SetLocalDescription(answer); err != nil {
+	gatherComplete := webrtc.GatheringCompletePromise(session.PeerConnection)
+	if err := session.SetLocalDescription(answer); err != nil {
 		return "", err
 	}
 	<-gatherComplete
-	return IO.LocalDescription().SDP, nil
+	return session.LocalDescription().SDP, nil
 }

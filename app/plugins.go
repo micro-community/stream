@@ -9,11 +9,11 @@ import (
 	"go-micro.dev/v4/util/log"
 )
 
-type Plugin interface {
+type IPlugin interface {
 	// 可能的入参类型：FirstConfig 第一次初始化配置，Config 后续配置更新，SE系列（StateEvent）流状态变化事件
 	OnEvent(any)
-	Publish(streamPath string, pub pubsub.IPublisher) error
-	Subscribe(streamPath string, sub pubsub.ISubscriber) error
+	Publish(streamPath string, pub pubsub.Publish) error
+	Subscribe(streamPath string, sub pubsub.Subscribe) error
 }
 
 type plugin struct {
@@ -22,10 +22,10 @@ type plugin struct {
 }
 
 // Plugins 所有的插件配置
-var Plugins = make(map[string]Plugin)
+var Plugins = make(map[string]IPlugin)
 
 // Install 安装功能组件
-func Install(opts ...Option) Plugin {
+func Install(opts ...Option) IPlugin {
 
 	pluginOptions := PluginOptions{
 		Name:    "DefaultName",
@@ -63,16 +63,16 @@ func (p *plugin) Update(opts PluginOptions) {
 
 }
 
-func (p *plugin) Push(streamPath string, url string, pusher pubsub.IPusher, save bool) {
+func (p *plugin) Push(streamPath string, url string, pusher pubsub.IPush, save bool) {
 
 }
 
-func (p *plugin) Publish(streamPath string, pub pubsub.IPublisher) error {
+func (p *plugin) Publish(streamPath string, pub pubsub.Publish) error {
 
 	return nil
 }
 
-func (p *plugin) Subscribe(streamPath string, sub pubsub.ISubscriber) error {
+func (p *plugin) Subscribe(streamPath string, sub pubsub.Subscribe) error {
 
 	return nil
 }

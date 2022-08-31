@@ -56,32 +56,30 @@ func (wc *webrtcPlugin) OnEvent(event any) {
 
 func (wc *webrtcPlugin) Play_(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/sdp")
-	streamPath := r.URL.Path[len("/webrtc/play/"):]
 	bytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return
 	}
-	var suber = WebRTCSubscriber{
-		WebRTCIO: WebRTCIO{SDP: string(bytes)},
-	}
-	if suber.PeerConnection, err = wc.Opts.API.NewPeerConnection(webrtc3.Configuration{}); err != nil {
+	var subscriber = WebRTCSubscriber{WebRTCSession: WebRTCSession{SDP: string(bytes)}}
+	if subscriber.PeerConnection, err = wc.Opts.API.NewPeerConnection(webrtc3.Configuration{}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	suber.OnICECandidate(func(ice *webrtc3.ICECandidate) {
+	subscriber.OnICECandidate(func(ice *webrtc3.ICECandidate) {
 		if ice != nil {
 			//	suber.Info(ice.ToJSON().Candidate)
 		}
 	})
-	if err = suber.SetRemoteDescription(webrtc3.SessionDescription{Type: webrtc3.SDPTypeOffer, SDP: suber.SDP}); err != nil {
+	if err = subscriber.SetRemoteDescription(webrtc3.SessionDescription{Type: webrtc3.SDPTypeOffer, SDP: subscriber.SDP}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = webrtcObject.Subscribe(streamPath, &suber); err != nil {
+	streamPathUrl := r.URL.Path[len("/webrtc/play/"):]
+	if err = webrtcObject.Subscribe(streamPathUrl, &subscriber); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if sdp, err := suber.GetAnswer(); err == nil {
+	if sdp, err := subscriber.GetAnswer(); err == nil {
 		w.Write([]byte(sdp))
 	} else {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -89,39 +87,42 @@ func (wc *webrtcPlugin) Play_(w http.ResponseWriter, r *http.Request) {
 }
 
 func (wc *webrtcPlugin) Push_(w http.ResponseWriter, r *http.Request) {
-	streamPath := r.URL.Path[len("/webrtc/push/"):]
+
 	w.Header().Set("Content-Type", "application/sdp")
 	bytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return
 	}
-	var puber = WebRTCPublisher{WebRTCIO: WebRTCIO{SDP: string(bytes)}}
-	if puber.PeerConnection, err = wc.Opts.API.NewPeerConnection(webrtc3.Configuration{}); err != nil {
+	var publisher = WebRTCPublisher{WebRTCSession: WebRTCSession{SDP: string(bytes)}}
+	if publisher.PeerConnection, err = wc.Opts.API.NewPeerConnection(webrtc3.Configuration{}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	puber.OnICECandidate(func(ice *webrtc3.ICECandidate) {
+	publisher.OnICECandidate(func(ice *webrtc3.ICECandidate) {
 		if ice != nil {
 			//puber.Info(ice.ToJSON().Candidate)
 		}
 	})
-	if _, err = puber.AddTransceiverFromKind(webrtc3.RTPCodecTypeVideo); err != nil {
+	if _, err = publisher.AddTransceiverFromKind(webrtc3.RTPCodecTypeVideo); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if _, err = puber.AddTransceiverFromKind(webrtc3.RTPCodecTypeAudio); err != nil {
+	if _, err = publisher.AddTransceiverFromKind(webrtc3.RTPCodecTypeAudio); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = webrtcObject.Publish(streamPath, &puber); err != nil {
+
+	streamPathUrl := r.URL.Path[len("/webrtc/push/"):]
+	if err = webrtcObject.Publish(streamPathUrl, &publisher); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := puber.SetRemoteDescription(webrtc3.SessionDescription{Type: webrtc3.SDPTypeOffer, SDP: puber.SDP}); err != nil {
+
+	if err := publisher.SetRemoteDescription(webrtc3.SessionDescription{Type: webrtc3.SDPTypeOffer, SDP: publisher.SDP}); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if answer, err := puber.GetAnswer(); err == nil {
+	if answer, err := publisher.GetAnswer(); err == nil {
 		w.Write([]byte(answer))
 	} else {
 		http.Error(w, err.Error(), http.StatusBadRequest)

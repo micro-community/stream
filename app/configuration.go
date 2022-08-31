@@ -32,6 +32,7 @@ var (
 	AppInfo = &ExtendInfo{&Version, time.Now(), Config}
 )
 
+// Configuration from files
 type Configuration struct {
 	Params Parameters
 	global struct {
@@ -39,7 +40,6 @@ type Configuration struct {
 			secrets string
 		}
 	}
-
 	webrtc struct {
 		enable bool
 	}

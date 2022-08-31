@@ -6,22 +6,22 @@ import (
 
 type WebRTCPublisher struct {
 	//Publisher
-	WebRTCIO
+	WebRTCSession
 }
 
 type IPublisher struct{}
 
-func (puber *WebRTCPublisher) OnEvent(event any) {
+func (publisher *WebRTCPublisher) OnEvent(event any) {
 	switch event.(type) {
 	case IPublisher:
-		puber.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
+		publisher.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
 
 			switch connectionState {
 			case webrtc.ICEConnectionStateDisconnected, webrtc.ICEConnectionStateFailed:
-				//	puber.Stop()
+				//	publisher.Stop()
 			}
 		})
 
 	}
-	// puber.Publisher.OnEvent(event)
+	// publisher.Publisher.OnEvent(event)
 }
