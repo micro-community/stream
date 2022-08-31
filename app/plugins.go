@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/logrusorgru/aurora"
-	"go-micro.dev/v4/util/log"
 	"github.com/micro-community/stream/pubsub"
+	"go-micro.dev/v4/util/log"
 )
 
 // Plugin Manager
@@ -84,6 +84,6 @@ func (p *plugin) Update(opts PluginOptions) {
 
 }
 
-func (p *plugin) Push(strempath string,url string pusher pubsub.IPusher save bool) {
+func (p *plugin) Push(streamPath string, url string, pusher pubsub.IPusher, save bool) {
 
 }
