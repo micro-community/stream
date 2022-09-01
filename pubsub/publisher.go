@@ -1,6 +1,6 @@
 package pubsub
 
 // Publish of Publisher
-type Publish interface {
+type IPublish interface {
 	IChannel
 }

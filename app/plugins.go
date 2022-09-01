@@ -12,8 +12,8 @@ import (
 type IPlugin interface {
 	// 可能的入参类型：FirstConfig 第一次初始化配置，Config 后续配置更新，SE系列（StateEvent）流状态变化事件
 	OnEvent(any)
-	Publish(streamPath string, pub pubsub.Publish) error
-	Subscribe(streamPath string, sub pubsub.Subscribe) error
+	Publish(streamPath string, pub pubsub.IPublish) error
+	Subscribe(streamPath string, sub pubsub.ISubscribe) error
 }
 
 type plugin struct {
@@ -67,12 +67,12 @@ func (p *plugin) Push(streamPath string, url string, pusher pubsub.IPush, save b
 
 }
 
-func (p *plugin) Publish(streamPath string, pub pubsub.Publish) error {
+func (p *plugin) Publish(streamPath string, pub pubsub.IPublish) error {
 
 	return nil
 }
 
-func (p *plugin) Subscribe(streamPath string, sub pubsub.Subscribe) error {
+func (p *plugin) Subscribe(streamPath string, sub pubsub.ISubscribe) error {
 
 	return nil
 }
