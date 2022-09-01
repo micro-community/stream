@@ -7,6 +7,14 @@ import (
 	"time"
 )
 
+// Client for Pubsub Options
+type Client[ClientOpt ClientOption] struct {
+	Option         *ClientOpt //客户端连接选项
+	StreamPath     string     // 本地流标识
+	RemoteURL      string     // 远程服务器地址（用于推拉）
+	ReConnectCount int        //重连次数
+}
+
 // IChannel for IIO to pub/sub stream
 type IChannel interface {
 	IsClosed() bool
@@ -16,18 +24,8 @@ type IChannel interface {
 	SetParentCtx(context.Context)
 }
 
-// ChannelOption
-type ChannelOption interface {
-	PublishOption | SubscribeOption
-}
-
-// ClientOption
-type ClientOption interface {
-	PullOption | PushOption
-}
-
 // Channel with Option Handled
-type Channel[CO ChannelOption] struct {
+type Channel[ChannelOpt ChannelOption] struct {
 	ID                 string
 	Type               string
 	context.Context    `json:"-"` //不要直接设置，应当通过OnEvent传入父级Context
@@ -37,6 +35,27 @@ type Channel[CO ChannelOption] struct {
 	io.Writer          `json:"-"`
 	io.Closer          `json:"-"`
 	Args               url.Values
-	ChannelOption      *CO      `json:"-"`
-	Specs              IChannel `json:"-"`
+	ChannelOption      *ChannelOpt `json:"-"`
+	Specs              IChannel    `json:"-"`
+}
+
+func (ch *Channel[ChannelOpt]) IsClosed() bool {
+	return ch.Err() != nil
+}
+
+// handle Event from Stream
+func (ch *Channel[ChannelOpt]) OnEvent(any) {
+
+}
+
+func (ch *Channel[ChannelOpt]) Stop() {
+
+}
+
+func (ch *Channel[ChannelOpt]) Set(any) {
+
+}
+
+func (ch *Channel[ChannelOpt]) SetParentCtx(context.Context) {
+
 }

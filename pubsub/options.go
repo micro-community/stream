@@ -30,3 +30,13 @@ type PullOption struct {
 	PullOnSubscribe bool              // 订阅时自动拉流
 	PullList        map[string]string // 自动拉流列表，以streamPath为key，url为value
 }
+
+// ChannelOption
+type ChannelOption interface {
+	PublishOption | SubscribeOption
+}
+
+// ClientOption
+type ClientOption interface {
+	PullOption | PushOption
+}

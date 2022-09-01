@@ -11,9 +11,14 @@ import (
 
 type IPlugin interface {
 	// 可能的入参类型：FirstConfig 第一次初始化配置，Config 后续配置更新，SE系列（StateEvent）流状态变化事件
+	//生命周期事件：
+	//Init()
+	//Update(opts PluginOptions) //配置更新
+	//State Change
 	OnEvent(any)
 	Publish(streamPath string, pub pubsub.IPublish) error
 	Subscribe(streamPath string, sub pubsub.ISubscribe) error
+	Push(streamPath string, url string, pusher pubsub.IPush, save bool)
 }
 
 type plugin struct {
