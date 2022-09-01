@@ -1,5 +1,7 @@
 package pubsub
 
+import "github.com/micro-community/stream/media"
+
 // Publish of Publisher
 type IPublish interface {
 	IChannel
