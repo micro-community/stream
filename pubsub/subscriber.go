@@ -24,5 +24,5 @@ type TrackPlayer struct {
 // Subscriber 订阅者实体定义
 type Subscriber struct {
 	Channel[SubscribeOption]
-	//TrackPlayer `json:"-"`
+	TrackPlayer `json:"-"`
 }
