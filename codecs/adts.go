@@ -6,10 +6,6 @@ import (
 	"github.com/micro-community/stream/util"
 )
 
-const (
-	ADTS_HEADER_SIZE = 7
-)
-
 // ISO/IEC 14496-15 11(16)/page
 //
 // Advanced Video Coding

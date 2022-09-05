@@ -1,3 +1,12 @@
+/*
+ * @Author: Edward crazybber@outlook.com
+ * @Date: 2022-09-02 12:47:32
+ * @LastEditors: Edward crazybber@outlook.com
+ * @LastEditTime: 2022-09-05 16:53:11
+ * @FilePath: \stream\app\options.go
+ * @Description: code content
+ * Copyright (c) 2022 by Edward crazybber@outlook.com, All Rights Reserved.
+ */
 package app
 
 import (

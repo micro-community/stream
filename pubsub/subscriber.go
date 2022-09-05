@@ -1,6 +1,13 @@
+/*
+ * @Author: Edward crazybber@outlook.com
+ * @Date: 2022-09-02 12:47:33
+ * @LastEditors: Edward crazybber@outlook.com
+ * @LastEditTime: 2022-09-05 17:06:53
+ * @FilePath: \stream\pubsub\subscriber.go
+ * @Description: code content
+ * Copyright (c) 2022 by Edward crazybber@outlook.com, All Rights Reserved.
+ */
 package pubsub
-
-import "context"
 
 type ISubscribe interface {
 	IChannel
@@ -12,17 +19,38 @@ type ISubscribe interface {
 	Stop()
 }
 
-type TrackPlayer struct {
-	context.Context    `json:"-"`
-	context.CancelFunc `json:"-"`
-	//Audio              PlayContext[*track.Audio, AudioSlice]
-	//Video              PlayContext[*track.Video, NALUSlice]
-	SkipTS     uint32 //跳过的时间戳
-	FirstAbsTS uint32 //订阅起始时间戳
-}
-
 // Subscriber 订阅者实体定义
 type Subscriber struct {
 	Channel[SubscribeOption]
 	TrackPlayer `json:"-"`
+}
+
+func (s *Subscriber) OnEvent(event any) {
+
+}
+
+// func (s *Subscriber) AddTrack(t Track) bool {
+
+// 	return false
+// }
+
+func (s *Subscriber) IsPlaying() bool {
+	return s.TrackPlayer.Context != nil && s.TrackPlayer.Err() == nil
+}
+
+func (s *Subscriber) PlayRaw() {
+
+}
+
+func (s *Subscriber) PlayFLV() {
+
+}
+
+func (s *Subscriber) PlayRTP() {
+
+}
+
+//PlayBlock 阻塞式读取数据
+func (s *Subscriber) PlayBlock(subType byte) {
+
 }
