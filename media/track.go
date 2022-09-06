@@ -1,8 +1,18 @@
+/*
+ * @Author: Edward crazybber@outlook.com
+ * @Date: 2022-09-02 12:47:33
+ * @LastEditors: Edward crazybber@outlook.com
+ * @LastEditTime: 2022-09-06 11:02:49
+ * @FilePath: \stream\media\track.go
+ * @Description: code content
+ * Copyright (c) 2022 by Edward crazybber@outlook.com, All Rights Reserved.
+ */
 package media
 
 import (
 	"time"
 
+	"github.com/micro-community/stream/algo"
 	"github.com/pion/rtp"
 )
 
@@ -60,4 +70,9 @@ type AudioTrack interface {
 	PreFrame() *AVFrame[AudioSlice]
 	WriteSlice(AudioSlice)
 	WriteADTS([]byte)
+}
+
+// Tracks for streams
+type Tracks struct {
+	algo.Map[string, Track]
 }

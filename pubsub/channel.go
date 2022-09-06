@@ -2,7 +2,7 @@
  * @Author: Edward crazybber@outlook.com
  * @Date: 2022-09-02 12:47:33
  * @LastEditors: Edward crazybber@outlook.com
- * @LastEditTime: 2022-09-06 09:57:30
+ * @LastEditTime: 2022-09-06 11:10:51
  * @FilePath: \stream\pubsub\channel.go
  * @Description: code content
  * Copyright (c) 2022 by Edward crazybber@outlook.com, All Rights Reserved.
@@ -37,15 +37,16 @@ type IChannel interface {
 type Channel[ChannelOpt ChannelOption] struct {
 	ID                 string
 	Type               string
-	context.Context    `json:"-"` //不要直接设置，应当通过OnEvent传入父级Context
-	context.CancelFunc `json:"-"` //流关闭是关闭发布者或者订阅者
-	StartTime          time.Time  //创建时间
+	Args               url.Values
+	StartTime          time.Time   //创建时间
+	Stream             *Stream     `json:"-"`
+	ChannelOption      *ChannelOpt `json:"-"`
+	Channel            IChannel    `json:"-"`
+	context.Context    `json:"-"`  //不要直接设置，应当通过OnEvent传入父级Context
+	context.CancelFunc `json:"-"`  //流关闭是关闭发布者或者订阅者
 	io.Reader          `json:"-"`
 	io.Writer          `json:"-"`
 	io.Closer          `json:"-"`
-	Args               url.Values
-	ChannelOption      *ChannelOpt `json:"-"`
-	Specs              IChannel    `json:"-"`
 }
 
 func (ch *Channel[ChannelOpt]) IsClosed() bool {
