@@ -1,12 +1,21 @@
+/*
+ * @Author: Edward crazybber@outlook.com
+ * @Date: 2022-09-02 12:47:33
+ * @LastEditors: Edward crazybber@outlook.com
+ * @LastEditTime: 2022-09-06 09:27:38
+ * @FilePath: \stream\service\webrtc\session.go
+ * @Description: code content
+ * Copyright (c) 2022 by Edward crazybber@outlook.com, All Rights Reserved.
+ */
 package webrtc
 
 import (
-	"github.com/pion/webrtc/v3"
+	webrtc3 "github.com/pion/webrtc/v3"
 )
 
 // WebRTCSession will be changed to session
 type WebRTCSession struct {
-	*webrtc.PeerConnection
+	*webrtc3.PeerConnection
 	SDP string
 }
 
@@ -16,7 +25,7 @@ func (session *WebRTCSession) GetAnswer() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	gatherComplete := webrtc.GatheringCompletePromise(session.PeerConnection)
+	gatherComplete := webrtc3.GatheringCompletePromise(session.PeerConnection)
 	if err := session.SetLocalDescription(answer); err != nil {
 		return "", err
 	}

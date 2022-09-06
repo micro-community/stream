@@ -2,7 +2,7 @@
  * @Author: Edward crazybber@outlook.com
  * @Date: 2022-09-02 12:47:33
  * @LastEditors: Edward crazybber@outlook.com
- * @LastEditTime: 2022-09-05 16:18:00
+ * @LastEditTime: 2022-09-06 09:57:30
  * @FilePath: \stream\pubsub\channel.go
  * @Description: code content
  * Copyright (c) 2022 by Edward crazybber@outlook.com, All Rights Reserved.
@@ -66,5 +66,10 @@ func (ch *Channel[ChannelOpt]) Set(any) {
 }
 
 func (ch *Channel[ChannelOpt]) SetParentCtx(context.Context) {
+
+}
+
+// receive from channel
+func (ch *Channel[ChannelOpt]) receive(streamPath string, channel IChannel, sOpt *SubscribeOption) {
 
 }
