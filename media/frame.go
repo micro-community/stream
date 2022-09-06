@@ -1,3 +1,12 @@
+/*
+ * @Author: Edward crazybber@outlook.com
+ * @Date: 2022-09-02 12:47:33
+ * @LastEditors: Edward crazybber@outlook.com
+ * @LastEditTime: 2022-09-06 11:35:19
+ * @FilePath: \stream\media\frame.go
+ * @Description: code content
+ * Copyright (c) 2022 by Edward crazybber@outlook.com, All Rights Reserved.
+ */
 package media
 
 import (
@@ -7,8 +16,14 @@ import (
 	"github.com/pion/rtp"
 )
 
-type NALUSlice net.Buffers
+const (
+	SUBTYPE_RAW = iota
+	SUBTYPE_AVCC
+	SUBTYPE_RTP
+	SUBTYPE_FLV
+)
 
+type NALUSlice net.Buffers
 type AudioSlice []byte
 
 type AVCCFrame []byte   // 一帧AVCC格式的数据
@@ -49,3 +64,12 @@ type AVFrame[T RawSlice] struct {
 	Raw     []T         `json:"-"` // 裸数据
 	canRead bool
 }
+
+// Define some regular type for frame
+type AudioFrame AVFrame[AudioSlice]
+type VideoFrame AVFrame[NALUSlice]
+type AudioDeConf DecoderConfiguration[AudioSlice]
+type VideoDeConf DecoderConfiguration[NALUSlice]
+type FLVFrame net.Buffers
+type AudioRTP RTPFrame
+type VideoRTP RTPFrame

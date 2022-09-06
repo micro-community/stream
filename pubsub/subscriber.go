@@ -2,7 +2,7 @@
  * @Author: Edward crazybber@outlook.com
  * @Date: 2022-09-02 12:47:33
  * @LastEditors: Edward crazybber@outlook.com
- * @LastEditTime: 2022-09-06 10:10:35
+ * @LastEditTime: 2022-09-06 12:21:31
  * @FilePath: \stream\pubsub\subscriber.go
  * @Description: code content
  * Copyright (c) 2022 by Edward crazybber@outlook.com, All Rights Reserved.
@@ -12,7 +12,7 @@ package pubsub
 import "github.com/micro-community/stream/media"
 
 type ISubscribe interface {
-	IChannel
+	IChannel[SubscribeOption]
 	IsPlaying() bool
 	PlayRaw()
 	PlayBlock(byte)
